@@ -1,6 +1,5 @@
 # Quiniela Mundialista 2026
 
-Web lista para publicar en GitHub Pages y conectar con Firebase.
 
 ## Incluye
 - Registro e ingreso por correo.
