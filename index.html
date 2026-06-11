@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quiniela Mundialista 2026</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="hero">
+    <div>
+      <p class="eyebrow">Mundial 2026</p>
+      <h1>Quiniela Mundialista</h1>
+      <p>Pronósticos, resultados oficiales, tabla diaria y ranking general.</p>
+    </div>
+    <div class="login-card">
+      <input id="email" placeholder="Correo" type="email" />
+      <input id="password" placeholder="Contraseña" type="password" />
+      <button id="loginBtn">Ingresar / Registrarse</button>
+      <button id="logoutBtn" class="ghost">Cerrar sesión</button>
+      <small id="userInfo">Sin sesión</small>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button data-tab="reglas" class="active">Reglas</button>
+    <button data-tab="quiniela">Mi quiniela</button>
+    <button data-tab="resultados">Resultados</button>
+    <button data-tab="diaria">Tabla diaria</button>
+    <button data-tab="ranking">Ranking</button>
+    <button data-tab="admin">Admin</button>
+  </nav>
+
+  <main>
+    <section id="reglas" class="tab active">
+      <h2>Reglas de la quiniela</h2>
+      <div class="rules-grid">
+        <article><strong>Marcador exacto</strong><span>5 puntos</span></article>
+        <article><strong>Resultado correcto</strong><span>3 puntos</span><small>Ganador o empate.</small></article>
+        <article><strong>Diferencia de goles</strong><span>1 punto extra</span><small>Solo si acertó el ganador.</small></article>
+        <article><strong>Bloqueo</strong><span>Automático</span><small>Cuando el partido tiene resultado oficial o ya venció la hora límite.</small></article>
+      </div>
+      <p class="note">El administrador registra los resultados finales. Desde ese momento el partido queda cerrado y ningún jugador puede modificar su pronóstico.</p>
+    </section>
+
+    <section id="quiniela" class="tab">
+      <h2>Mi quiniela</h2>
+      <div id="matchesList" class="match-list"></div>
+    </section>
+
+    <section id="resultados" class="tab">
+      <h2>Resultados oficiales</h2>
+      <div id="resultsList" class="match-list"></div>
+    </section>
+
+    <section id="diaria" class="tab">
+      <h2>Tabla diaria</h2>
+      <input id="dailyDate" type="date" />
+      <button id="loadDaily">Ver día</button>
+      <div id="dailyTable"></div>
+    </section>
+
+    <section id="ranking" class="tab">
+      <h2>Ranking general</h2>
+      <div id="rankingTable"></div>
+    </section>
+
+    <section id="admin" class="tab">
+      <h2>Panel administrador</h2>
+      <p class="note">Solo usuarios autorizados en Firestore pueden guardar resultados.</p>
+      <div id="adminList" class="match-list"></div>
+    </section>
+  </main>
+
+  <footer>Quiniela Mundialista 2026 · Plantilla editable</footer>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

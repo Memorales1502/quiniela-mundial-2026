@@ -1,0 +1,21 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function isAdmin() { return signedIn() && request.auth.token.email in ['tu-correo@dominio.com']; }
+
+    match /results/{matchId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /predictions/{predictionId} {
+      allow read: if true;
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid;
+      allow update: if signedIn()
+        && resource.data.uid == request.auth.uid
+        && !exists(/databases/$(database)/documents/results/$(resource.data.matchId));
+      allow delete: if false;
+    }
+  }
+}
