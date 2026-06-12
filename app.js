@@ -123,44 +123,163 @@ async function getPrediction(matchId) {
   return snap.exists() ? snap.data() : null;
 }
 
-async function savePrediction(match) {
+async function saveAllPredictions() {
   if (!currentUser) {
-    alert("Debes ingresar o registrarte primero.");
+    alert("Debes iniciar sesión.");
     return;
   }
 
-  const existing = await getPrediction(match.id);
+  const alreadySubmitted = [];
+  const blockedByGame = [];
+  const toSave = [];
 
-  if (isLockedForInput(match, existing)) {
-    alert("Este pronóstico ya está bloqueado y no puede modificarse.");
+  for (const match of MATCHES) {
+    const existing = await getPrediction(match.id);
+
+    if (existing?.submitted) {
+      alreadySubmitted.push(match);
+      continue;
+    }
+
+    if (hasResult(match.id) || isStarted(match)) {
+      blockedByGame.push(match);
+      continue;
+    }
+
+    const h = $(`ph_${match.id}`)?.value ?? "";
+    const a = $(`pa_${match.id}`)?.value ?? "";
+    const incomplete = h === "" || a === "";
+
+    toSave.push({
+      match,
+      homeScore: incomplete ? null : Number(h),
+      awayScore: incomplete ? null : Number(a),
+      rawHome: h,
+      rawAway: a,
+      invalid: incomplete
+    });
+  }
+
+  if (toSave.length === 0) {
+    alert("No hay pronósticos nuevos para enviar.");
     return;
   }
 
-  const h = $(`ph_${match.id}`).value;
-  const a = $(`pa_${match.id}`).value;
-  const incomplete = h === "" || a === "";
+  const invalidCount = toSave.filter((item) => item.invalid).length;
 
-  const confirmMsg = incomplete
-    ? "Este marcador está incompleto. Si lo envías así, será INVÁLIDO y tendrá 0 puntos. ¿Deseas enviarlo?"
-    : `Vas a enviar tu pronóstico: ${match.home} ${h}-${a} ${match.away}. Una vez enviado ya no podrá modificarse. ¿Confirmas?`;
+  let message =
+    `Vas a enviar ${toSave.length} pronósticos y quedarán bloqueados definitivamente.\n\n`;
 
-  if (!confirm(confirmMsg)) return;
+  if (invalidCount > 0) {
+    message +=
+      `Atención: ${invalidCount} pronóstico(s) están incompletos y se guardarán como INVÁLIDOS con 0 puntos.\n\n`;
+  }
 
-  await setDoc(doc(db, "predictions", `${currentUser.uid}_${match.id}`), {
-    uid: currentUser.uid,
-    email: currentUser.email,
-    playerName: getDisplayName(currentUser),
-    matchId: match.id,
-    homeScore: incomplete ? null : Number(h),
-    awayScore: incomplete ? null : Number(a),
-    invalid: incomplete,
-    submitted: true,
-    locked: true,
-    submittedAt: serverTimestamp()
+  if (blockedByGame.length > 0) {
+    message +=
+      `${blockedByGame.length} partido(s) ya están bloqueados por inicio o resultado oficial y no se enviarán.\n\n`;
+  }
+
+  if (alreadySubmitted.length > 0) {
+    message +=
+      `${alreadySubmitted.length} partido(s) ya habían sido enviados anteriormente y no se modificarán.\n\n`;
+  }
+
+  message += "¿Confirmas el envío?";
+
+  if (!confirm(message)) return;
+
+  const submittedAt = new Date();
+
+  for (const item of toSave) {
+    await setDoc(doc(db, "predictions", `${currentUser.uid}_${item.match.id}`), {
+      uid: currentUser.uid,
+      email: currentUser.email,
+      playerName: getDisplayName(currentUser),
+      matchId: item.match.id,
+      homeScore: item.homeScore,
+      awayScore: item.awayScore,
+      invalid: item.invalid,
+      submitted: true,
+      locked: true,
+      submittedAt: serverTimestamp()
+    });
+  }
+
+  downloadPredictionsCSV(toSave, submittedAt);
+
+  alert("Pronósticos enviados correctamente. Se descargó tu constancia.");
+  await renderAll();
+}
+
+function downloadPredictionsCSV(items, submittedAt) {
+  const playerName = getDisplayName(currentUser);
+  const email = currentUser.email;
+  const dateText = submittedAt.toLocaleString("es-GT");
+
+  const rows = [];
+
+  rows.push(["CONSTANCIA DE PRONÓSTICOS - QUINIELA MUNDIALISTA 2026"]);
+  rows.push(["Jugador", playerName]);
+  rows.push(["Correo", email]);
+  rows.push(["Fecha de envío", dateText]);
+  rows.push([]);
+  rows.push([
+    "ID",
+    "Fecha Partido",
+    "Hora",
+    "Grupo",
+    "Equipo 1",
+    "Pronóstico Equipo 1",
+    "Equipo 2",
+    "Pronóstico Equipo 2",
+    "Sede",
+    "Estado"
+  ]);
+
+  items.forEach((item) => {
+    rows.push([
+      item.match.id,
+      item.match.date,
+      item.match.time || "",
+      item.match.group || "",
+      item.match.home,
+      item.invalid ? "" : item.rawHome,
+      item.match.away,
+      item.invalid ? "" : item.rawAway,
+      item.match.venue || "",
+      item.invalid ? "INVÁLIDO - 0 PUNTOS" : "ENVIADO Y BLOQUEADO"
+    ]);
   });
 
-  alert(incomplete ? "Pronóstico enviado como inválido. Puntaje: 0." : "Pronóstico enviado y bloqueado correctamente.");
-  await renderAll();
+  const csvContent = rows
+    .map((row) =>
+      row
+        .map((cell) => {
+          const value = String(cell ?? "");
+          return `"${value.replaceAll('"', '""')}"`;
+        })
+        .join(",")
+    )
+    .join("\n");
+
+  const blob = new Blob(["\uFEFF" + csvContent], {
+    type: "text/csv;charset=utf-8;"
+  });
+
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+
+  const safeEmail = email.replaceAll("@", "_").replaceAll(".", "_");
+  const fileDate = submittedAt.toISOString().slice(0, 10);
+
+  link.href = url;
+  link.download = `constancia_quiniela_${safeEmail}_${fileDate}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
+  URL.revokeObjectURL(url);
 }
 
 async function saveResult(match) {
@@ -229,7 +348,6 @@ function card(match, prediction) {
         <input id="ph_${match.id}" type="number" min="0" value="${prediction?.homeScore ?? ""}" ${locked ? "disabled" : ""}>
         -
         <input id="pa_${match.id}" type="number" min="0" value="${prediction?.awayScore ?? ""}" ${locked ? "disabled" : ""}>
-        <button data-save="${match.id}" ${locked ? "disabled" : ""}>Enviar pronóstico</button>
       </div>
     </article>
   `;
@@ -238,6 +356,10 @@ function card(match, prediction) {
 async function renderQuiniela() {
   if (!currentUser) {
     $("matchesList").innerHTML = '<p class="note">Ingresa o regístrate para llenar tu quiniela.</p>';
+
+    const submitAllBtn = $("submitAllBtn");
+    if (submitAllBtn) submitAllBtn.style.display = "none";
+
     return;
   }
 
@@ -249,9 +371,12 @@ async function renderQuiniela() {
 
   $("matchesList").innerHTML = html.join("");
 
-  MATCHES.forEach((match) => {
-    document.querySelector(`[data-save="${match.id}"]`)?.addEventListener("click", () => savePrediction(match));
-  });
+  const submitAllBtn = $("submitAllBtn");
+
+  if (submitAllBtn) {
+    submitAllBtn.style.display = "inline-block";
+    submitAllBtn.onclick = saveAllPredictions;
+  }
 }
 
 function renderResults() {
