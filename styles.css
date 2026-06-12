@@ -19,33 +19,90 @@ body {
 }
 
 .hero {
+  min-height: 300px;
   display: flex;
-  justify-content: space-between;
-  gap: 24px;
+  justify-content: center;
   align-items: center;
-  padding: 36px;
-  min-height: 220px;
+  position: relative;
+  text-align: center;
+  padding: 50px 24px;
   background: radial-gradient(circle at top right, rgba(24,196,255,.35), transparent 35%);
 }
 
-h1 { font-size: 42px; margin: 4px 0; }
+.hero-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  max-width: 900px;
+  margin: auto;
+}
+
+.welcome-user {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--accent2);
+  margin-bottom: 12px;
+  text-transform: capitalize;
+}
+
+h1 {
+  font-size: 60px;
+  margin: 4px 0;
+  line-height: 1.05;
+}
+
 h2 { margin-top: 0; }
+
+.hero-text {
+  font-size: 18px;
+  color: var(--muted);
+  margin: 8px 0 18px;
+}
 
 .eyebrow {
   letter-spacing: .2em;
   text-transform: uppercase;
   color: var(--accent2);
   font-weight: 700;
+  margin: 0;
+}
+
+.login-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(3, 10, 20, .92);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 99999;
+  padding: 24px;
+}
+
+.login-overlay.hidden {
+  display: none;
 }
 
 .login-card {
-  background: rgba(16,29,49,.9);
+  background: rgba(16,29,49,.96);
   border: 1px solid var(--line);
-  border-radius: 18px;
-  padding: 18px;
+  border-radius: 22px;
+  padding: 24px;
   display: grid;
-  gap: 10px;
-  min-width: 280px;
+  gap: 12px;
+  width: 420px;
+  max-width: 100%;
+  box-shadow: 0 30px 80px rgba(0,0,0,.35);
+}
+
+.login-card h2 {
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.login-card small {
+  text-align: center;
+  color: var(--muted);
 }
 
 input, button {
@@ -73,8 +130,16 @@ button:disabled {
   border: 1px solid var(--line);
 }
 
+.logout-main {
+  margin-top: 4px;
+  width: auto;
+  padding-left: 22px;
+  padding-right: 22px;
+}
+
 .tabs {
   display: flex;
+  justify-content: center;
   gap: 8px;
   overflow: auto;
   padding: 12px 24px;
@@ -208,17 +273,23 @@ footer {
 
 @media(max-width: 760px) {
   .hero {
-    display: block;
-    padding: 24px;
+    min-height: 260px;
+    padding: 34px 18px;
   }
 
-  .login-card {
-    margin-top: 18px;
+  h1 {
+    font-size: 38px;
+  }
+
+  .welcome-user {
+    font-size: 20px;
+  }
+
+  .tabs {
+    justify-content: flex-start;
   }
 
   .match-card {
     grid-template-columns: 1fr;
   }
-
-  h1 { font-size: 34px; }
 }
