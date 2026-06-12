@@ -5,7 +5,8 @@ import {
   signInWithEmailAndPassword,
   sendPasswordResetEmail,
   onAuthStateChanged,
-  signOut
+  signOut,
+  updateProfile
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 
 import {
@@ -26,6 +27,7 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 let currentUser = null;
+let currentPlayerName = "";
 let results = {};
 
 const $ = (id) => document.getElementById(id);
@@ -45,14 +47,36 @@ const hasResult = (matchId) =>
   results[matchId]?.homeScore !== undefined &&
   results[matchId]?.awayScore !== undefined;
 
-const getDisplayName = (user) => {
-  if (!user?.email) return "";
-  return user.email
+const cleanNameFromEmail = (email) => {
+  if (!email) return "";
+  return email
     .split("@")[0]
     .replaceAll(".", " ")
     .replaceAll("_", " ")
     .replaceAll("-", " ");
 };
+
+const getDisplayName = (user) => {
+  if (currentPlayerName) return currentPlayerName;
+  if (user?.displayName) return user.displayName;
+  return cleanNameFromEmail(user?.email);
+};
+
+async function loadUserProfile(user) {
+  if (!user) return "";
+
+  const userRef = doc(db, "users", user.uid);
+  const snap = await getDoc(userRef);
+
+  if (snap.exists()) {
+    const data = snap.data();
+    if (data.name) return data.name;
+  }
+
+  if (user.displayName) return user.displayName;
+
+  return cleanNameFromEmail(user.email);
+}
 
 const isInvalidPrediction = (prediction) => {
   return !prediction ||
@@ -167,22 +191,18 @@ async function saveAllPredictions() {
 
   const invalidCount = toSave.filter((item) => item.invalid).length;
 
-  let message =
-    `Vas a enviar ${toSave.length} pronósticos y quedarán bloqueados definitivamente.\n\n`;
+  let message = `Vas a enviar ${toSave.length} pronósticos y quedarán bloqueados definitivamente.\n\n`;
 
   if (invalidCount > 0) {
-    message +=
-      `Atención: ${invalidCount} pronóstico(s) están incompletos y se guardarán como INVÁLIDOS con 0 puntos.\n\n`;
+    message += `Atención: ${invalidCount} pronóstico(s) están incompletos y se guardarán como INVÁLIDOS con 0 puntos.\n\n`;
   }
 
   if (blockedByGame.length > 0) {
-    message +=
-      `${blockedByGame.length} partido(s) ya están bloqueados por inicio o resultado oficial y no se enviarán.\n\n`;
+    message += `${blockedByGame.length} partido(s) ya están bloqueados por inicio o resultado oficial y no se enviarán.\n\n`;
   }
 
   if (alreadySubmitted.length > 0) {
-    message +=
-      `${alreadySubmitted.length} partido(s) ya habían sido enviados anteriormente y no se modificarán.\n\n`;
+    message += `${alreadySubmitted.length} partido(s) ya habían sido enviados anteriormente y no se modificarán.\n\n`;
   }
 
   message += "¿Confirmas el envío?";
@@ -190,12 +210,13 @@ async function saveAllPredictions() {
   if (!confirm(message)) return;
 
   const submittedAt = new Date();
+  const playerName = getDisplayName(currentUser);
 
   for (const item of toSave) {
     await setDoc(doc(db, "predictions", `${currentUser.uid}_${item.match.id}`), {
       uid: currentUser.uid,
       email: currentUser.email,
-      playerName: getDisplayName(currentUser),
+      playerName,
       matchId: item.match.id,
       homeScore: item.homeScore,
       awayScore: item.awayScore,
@@ -560,8 +581,14 @@ $("loginBtn").onclick = async () => {
 };
 
 $("registerBtn").onclick = async () => {
+  const displayName = $("displayName").value.trim();
   const email = $("email").value.trim();
   const password = $("password").value;
+
+  if (!displayName) {
+    alert("Ingresa tu nombre o usuario.");
+    return;
+  }
 
   if (!email || !password) {
     alert("Ingresa correo y contraseña para crear tu cuenta.");
@@ -574,7 +601,20 @@ $("registerBtn").onclick = async () => {
   }
 
   try {
-    await createUserWithEmailAndPassword(auth, email, password);
+    const cred = await createUserWithEmailAndPassword(auth, email, password);
+
+    await updateProfile(cred.user, {
+      displayName
+    });
+
+    await setDoc(doc(db, "users", cred.user.uid), {
+      name: displayName,
+      email,
+      createdAt: serverTimestamp()
+    });
+
+    currentPlayerName = displayName;
+
     alert("Cuenta creada correctamente. Ya puedes participar en la quiniela.");
   } catch (error) {
     if (error.code === "auth/email-already-in-use") {
@@ -612,6 +652,7 @@ onAuthStateChanged(auth, async (user) => {
   const userInfo = $("userInfo");
 
   if (user) {
+    currentPlayerName = await loadUserProfile(user);
     const name = getDisplayName(user);
 
     if (welcomeUser) {
@@ -619,13 +660,15 @@ onAuthStateChanged(auth, async (user) => {
     }
 
     if (userInfo) {
-      userInfo.textContent = `Sesión: ${user.email}`;
+      userInfo.textContent = `Sesión: ${name}`;
     }
 
     if (loginBox) {
       loginBox.classList.add("hidden");
     }
   } else {
+    currentPlayerName = "";
+
     if (welcomeUser) {
       welcomeUser.textContent = "";
     }
