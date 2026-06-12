@@ -3,32 +3,46 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return signedIn()
+        && (
+          request.auth.token.email == "memoralesre@gmail.com"
+          || request.auth.token.email == "admin@quiniela.com"
+        );
+    }
+
     match /players/{doc} {
-      allow read, write: if request.auth != null;
+      allow read, write: if signedIn();
     }
 
     match /predictions/{doc} {
       allow read: if true;
-      allow create: if request.auth != null
+
+      allow create: if signedIn()
         && request.resource.data.uid == request.auth.uid
         && request.resource.data.submitted == true
         && request.resource.data.locked == true;
+
       allow update, delete: if false;
     }
 
     match /results/{doc} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow create, update, delete: if isAdmin();
     }
 
     match /matches/{doc} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow create, update, delete: if isAdmin();
     }
 
     match /rankings/{doc} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow create, update, delete: if isAdmin();
     }
   }
 }
