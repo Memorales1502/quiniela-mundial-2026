@@ -3,6 +3,7 @@ import {
   getAuth,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  sendPasswordResetEmail,
   onAuthStateChanged,
   signOut
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
@@ -422,18 +423,56 @@ $("loginBtn").onclick = async () => {
   const password = $("password").value;
 
   if (!email || !password) {
-    alert("Ingresa correo y contraseña.");
+    alert("Ingresa tu correo y contraseña.");
     return;
   }
 
   try {
     await signInWithEmailAndPassword(auth, email, password);
   } catch (error) {
-    try {
-      await createUserWithEmailAndPassword(auth, email, password);
-    } catch (createError) {
-      alert(createError.message);
+    alert("No se pudo iniciar sesión. Verifica tu correo y contraseña.");
+  }
+};
+
+$("registerBtn").onclick = async () => {
+  const email = $("email").value.trim();
+  const password = $("password").value;
+
+  if (!email || !password) {
+    alert("Ingresa correo y contraseña para crear tu cuenta.");
+    return;
+  }
+
+  if (password.length < 6) {
+    alert("La contraseña debe tener al menos 6 caracteres.");
+    return;
+  }
+
+  try {
+    await createUserWithEmailAndPassword(auth, email, password);
+    alert("Cuenta creada correctamente. Ya puedes participar en la quiniela.");
+  } catch (error) {
+    if (error.code === "auth/email-already-in-use") {
+      alert("Este correo ya está registrado. Usa el botón Iniciar sesión.");
+    } else {
+      alert("No se pudo crear la cuenta: " + error.message);
     }
+  }
+};
+
+$("resetPasswordBtn").onclick = async () => {
+  const email = $("email").value.trim();
+
+  if (!email) {
+    alert("Escribe tu correo para recuperar la contraseña.");
+    return;
+  }
+
+  try {
+    await sendPasswordResetEmail(auth, email);
+    alert("Te enviamos un correo para restablecer tu contraseña.");
+  } catch (error) {
+    alert("No se pudo enviar el correo de recuperación: " + error.message);
   }
 };
 
