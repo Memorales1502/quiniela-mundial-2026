@@ -147,6 +147,34 @@ async function getPrediction(matchId) {
   return snap.exists() ? snap.data() : null;
 }
 
+function downloadCSV(rows, filename) {
+  const csvContent = rows
+    .map((row) =>
+      row
+        .map((cell) => {
+          const value = String(cell ?? "");
+          return `"${value.replaceAll('"', '""')}"`;
+        })
+        .join(",")
+    )
+    .join("\n");
+
+  const blob = new Blob(["\uFEFF" + csvContent], {
+    type: "text/csv;charset=utf-8;"
+  });
+
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
+  URL.revokeObjectURL(url);
+}
+
 async function saveAllPredictions() {
   if (!currentUser) {
     alert("Debes iniciar sesión.");
@@ -273,34 +301,157 @@ function downloadPredictionsCSV(items, submittedAt) {
     ]);
   });
 
-  const csvContent = rows
-    .map((row) =>
-      row
-        .map((cell) => {
-          const value = String(cell ?? "");
-          return `"${value.replaceAll('"', '""')}"`;
-        })
-        .join(",")
-    )
-    .join("\n");
-
-  const blob = new Blob(["\uFEFF" + csvContent], {
-    type: "text/csv;charset=utf-8;"
-  });
-
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-
   const safeEmail = email.replaceAll("@", "_").replaceAll(".", "_");
   const fileDate = submittedAt.toISOString().slice(0, 10);
 
-  link.href = url;
-  link.download = `constancia_quiniela_${safeEmail}_${fileDate}.csv`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+  downloadCSV(rows, `constancia_quiniela_${safeEmail}_${fileDate}.csv`);
+}
 
-  URL.revokeObjectURL(url);
+async function downloadPlayerPredictionsCSV(playerKey) {
+  if (!ADMIN_EMAILS.includes(currentUser?.email)) {
+    alert("No tienes permiso de administrador.");
+    return;
+  }
+
+  const predSnap = await getDocs(collection(db, "predictions"));
+  const rows = [];
+  let playerName = "";
+  let playerEmail = "";
+
+  rows.push(["PRONÓSTICOS POR JUGADOR - QUINIELA MUNDIALISTA 2026"]);
+  rows.push(["Descargado por", currentUser.email]);
+  rows.push(["Fecha de descarga", new Date().toLocaleString("es-GT")]);
+  rows.push([]);
+  rows.push([
+    "Jugador",
+    "Correo",
+    "ID Partido",
+    "Fecha",
+    "Hora",
+    "Grupo",
+    "Equipo 1",
+    "Pronóstico Equipo 1",
+    "Equipo 2",
+    "Pronóstico Equipo 2",
+    "Sede",
+    "Estado",
+    "Resultado Oficial",
+    "Puntos"
+  ]);
+
+  predSnap.forEach((docSnap) => {
+    const prediction = docSnap.data();
+    const key = prediction.email || prediction.uid || "sin-correo";
+
+    if (key !== playerKey) return;
+
+    const match = MATCHES.find((m) => m.id === prediction.matchId);
+    if (!match) return;
+
+    const result = results[prediction.matchId];
+    const score = scorePoints(prediction, result);
+
+    playerName = prediction.playerName || cleanNameFromEmail(prediction.email);
+    playerEmail = prediction.email || "";
+
+    rows.push([
+      playerName,
+      playerEmail,
+      match.id,
+      match.date,
+      match.time || "",
+      match.group || "",
+      match.home,
+      prediction.invalid ? "" : prediction.homeScore,
+      match.away,
+      prediction.invalid ? "" : prediction.awayScore,
+      match.venue || "",
+      prediction.invalid ? "INVÁLIDO - 0 PUNTOS" : "ENVIADO",
+      result ? `${result.homeScore}-${result.awayScore}` : "PENDIENTE",
+      score.points
+    ]);
+  });
+
+  if (rows.length <= 5) {
+    alert("No se encontraron pronósticos para este jugador.");
+    return;
+  }
+
+  const safeName = (playerName || playerEmail || "jugador")
+    .toLowerCase()
+    .replaceAll(" ", "_")
+    .replaceAll("@", "_")
+    .replaceAll(".", "_")
+    .replaceAll("/", "_");
+
+  const today = new Date().toISOString().slice(0, 10);
+
+  downloadCSV(rows, `pronosticos_${safeName}_${today}.csv`);
+}
+
+async function buildPlayerDownloadCards() {
+  const predSnap = await getDocs(collection(db, "predictions"));
+  const players = {};
+
+  predSnap.forEach((docSnap) => {
+    const prediction = docSnap.data();
+    const key = prediction.email || prediction.uid || "sin-correo";
+
+    if (!players[key]) {
+      players[key] = {
+        key,
+        name: prediction.playerName || cleanNameFromEmail(prediction.email),
+        email: prediction.email || "",
+        count: 0
+      };
+    }
+
+    players[key].count += 1;
+  });
+
+  const list = Object.values(players).sort((a, b) =>
+    a.name.localeCompare(b.name)
+  );
+
+  if (list.length === 0) {
+    return `
+      <div class="rules-text">
+        <h3>Descargar pronósticos por jugador</h3>
+        <p class="note">Aún no hay pronósticos enviados.</p>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="rules-text">
+      <h3>Descargar pronósticos por jugador</h3>
+      <p class="note">
+        Cada botón descarga únicamente los pronósticos enviados por ese jugador.
+      </p>
+
+      <div class="match-list">
+        ${list.map((player) => `
+          <article class="match-card">
+            <div>
+              <div class="teams">${player.name}</div>
+              <div class="meta">${player.email}</div>
+              <div class="note">${player.count} pronóstico(s) enviados</div>
+            </div>
+
+            <div>
+              <span class="ok">Disponible</span>
+            </div>
+
+            <div class="score-inputs">
+              <button data-download-player="${player.key}">
+                Descargar CSV
+              </button>
+            </div>
+          </article>
+        `).join("")}
+      </div>
+    </div>
+  `;
 }
 
 async function saveResult(match) {
@@ -416,13 +567,15 @@ function renderResults() {
   }).join("");
 }
 
-function renderAdmin() {
+async function renderAdmin() {
   if (!ADMIN_EMAILS.includes(currentUser?.email)) {
     $("adminList").innerHTML = '<p class="note">Ingresa con un correo administrador.</p>';
     return;
   }
 
-  $("adminList").innerHTML = MATCHES.map((match) => `
+  const playerDownloadsHtml = await buildPlayerDownloadCards();
+
+  const resultsAdminHtml = MATCHES.map((match) => `
     <article class="match-card">
       <div>
         <div class="teams">${match.home} vs ${match.away}</div>
@@ -437,6 +590,27 @@ function renderAdmin() {
       </div>
     </article>
   `).join("");
+
+  $("adminList").innerHTML = `
+    ${playerDownloadsHtml}
+
+    <div class="rules-text" style="margin-top:24px;">
+      <h3>Registrar resultados oficiales</h3>
+      <p class="note">
+        Ingresa los resultados oficiales de 90 minutos para calcular el ranking.
+      </p>
+    </div>
+
+    <div class="match-list">
+      ${resultsAdminHtml}
+    </div>
+  `;
+
+  document.querySelectorAll("[data-download-player]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      downloadPlayerPredictionsCSV(btn.dataset.downloadPlayer);
+    });
+  });
 
   MATCHES.forEach((match) => {
     document.querySelector(`[data-result="${match.id}"]`)?.addEventListener("click", () => saveResult(match));
@@ -551,7 +725,7 @@ async function renderAll() {
   await loadResults();
   await renderQuiniela();
   renderResults();
-  renderAdmin();
+  await renderAdmin();
   await renderRanking();
   await renderDaily();
 }
