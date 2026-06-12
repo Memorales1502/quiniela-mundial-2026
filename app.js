@@ -38,12 +38,19 @@ const outcome = (home, away) => {
   return home > away ? "HOME" : "AWAY";
 };
 
-const isStarted = (match) => {
-  return Date.now() >= getKickoffDate(match).getTime();
-};
+const isStarted = (match) => Date.now() >= getKickoffDate(match).getTime();
 
-const hasResult = (matchId) => {
-  return results[matchId]?.homeScore !== undefined && results[matchId]?.awayScore !== undefined;
+const hasResult = (matchId) =>
+  results[matchId]?.homeScore !== undefined &&
+  results[matchId]?.awayScore !== undefined;
+
+const getDisplayName = (user) => {
+  if (!user?.email) return "";
+  return user.email
+    .split("@")[0]
+    .replaceAll(".", " ")
+    .replaceAll("_", " ")
+    .replaceAll("-", " ");
 };
 
 const isInvalidPrediction = (prediction) => {
@@ -141,6 +148,7 @@ async function savePrediction(match) {
   await setDoc(doc(db, "predictions", `${currentUser.uid}_${match.id}`), {
     uid: currentUser.uid,
     email: currentUser.email,
+    playerName: getDisplayName(currentUser),
     matchId: match.id,
     homeScore: incomplete ? null : Number(h),
     awayScore: incomplete ? null : Number(a),
@@ -299,8 +307,11 @@ async function buildScores(dateFilter = null) {
     if (!match) return;
     if (dateFilter && match.date !== dateFilter) return;
 
-    users[prediction.email] ??= {
-      email: prediction.email,
+    const playerKey = prediction.email || prediction.uid || "sin-correo";
+
+    users[playerKey] ??= {
+      email: playerKey,
+      playerName: prediction.playerName || playerKey.split("@")[0],
       pts: 0,
       exactos: 0,
       ganadores: 0,
@@ -309,10 +320,10 @@ async function buildScores(dateFilter = null) {
 
     const score = scorePoints(prediction, results[prediction.matchId]);
 
-    users[prediction.email].pts += score.points;
-    if (score.exact) users[prediction.email].exactos += 1;
-    if (score.winner) users[prediction.email].ganadores += 1;
-    users[prediction.email].goles += score.goals;
+    users[playerKey].pts += score.points;
+    if (score.exact) users[playerKey].exactos += 1;
+    if (score.winner) users[playerKey].ganadores += 1;
+    users[playerKey].goles += score.goals;
   });
 
   return Object.values(users).sort((a, b) =>
@@ -320,7 +331,7 @@ async function buildScores(dateFilter = null) {
     b.exactos - a.exactos ||
     b.ganadores - a.ganadores ||
     b.goles - a.goles ||
-    a.email.localeCompare(b.email)
+    a.playerName.localeCompare(b.playerName)
   );
 }
 
@@ -343,7 +354,7 @@ async function renderRanking() {
         ${rows.map((r, i) => `
           <tr>
             <td>${i + 1}</td>
-            <td>${r.email}</td>
+            <td>${r.playerName}</td>
             <td>${r.pts}</td>
             <td>${r.exactos}</td>
             <td>${r.ganadores}</td>
@@ -377,7 +388,7 @@ async function renderDaily() {
         ${rows.map((r, i) => `
           <tr>
             <td>${i + 1}</td>
-            <td>${r.email}</td>
+            <td>${r.playerName}</td>
             <td>${r.pts}</td>
             <td>${r.exactos}</td>
             <td>${r.ganadores}</td>
@@ -431,6 +442,38 @@ $("loadDaily").onclick = renderDaily;
 
 onAuthStateChanged(auth, async (user) => {
   currentUser = user;
-  $("userInfo").textContent = user ? `Sesión: ${user.email}` : "Sin sesión";
+
+  const loginBox = $("loginBox");
+  const welcomeUser = $("welcomeUser");
+  const userInfo = $("userInfo");
+
+  if (user) {
+    const name = getDisplayName(user);
+
+    if (welcomeUser) {
+      welcomeUser.textContent = `Bienvenido, ${name}`;
+    }
+
+    if (userInfo) {
+      userInfo.textContent = `Sesión: ${user.email}`;
+    }
+
+    if (loginBox) {
+      loginBox.classList.add("hidden");
+    }
+  } else {
+    if (welcomeUser) {
+      welcomeUser.textContent = "";
+    }
+
+    if (userInfo) {
+      userInfo.textContent = "Sin sesión";
+    }
+
+    if (loginBox) {
+      loginBox.classList.remove("hidden");
+    }
+  }
+
   await renderAll();
 });
