@@ -55,7 +55,7 @@
         <article><strong>Goles Equipo 1</strong><span>1 punto</span><small>Si acierta los goles exactos del Equipo 1.</small></article>
         <article><strong>Goles Equipo 2</strong><span>1 punto</span><small>Si acierta los goles exactos del Equipo 2.</small></article>
         <article><strong>Ganador o empate</strong><span>1 punto</span><small>Si acierta el ganador o empate correcto.</small></article>
-        <article><strong>Bloqueo</strong><span>Automático</span><small>Al enviar el pronóstico o al iniciar el partido.</small></article>
+        <article><strong>Bloqueo</strong><span>Automático</span><small>Al enviar el pronóstico.</small></article>
         <article><strong>Marcador incompleto</strong><span>0 puntos</span><small>Si falta algún marcador, será inválido.</small></article>
       </div>
 
@@ -92,7 +92,15 @@
 
     <section id="quiniela" class="tab">
       <h2>Mi quiniela</h2>
+      <p class="note">
+        Llena todos tus marcadores y presiona una sola vez el botón de envío. Al enviar, tus pronósticos quedarán bloqueados y se descargará una constancia.
+      </p>
+
       <div id="matchesList" class="match-list"></div>
+
+      <div style="margin-top:30px;text-align:center">
+        <button id="submitAllBtn">ENVIAR TODOS MIS PRONÓSTICOS</button>
+      </div>
     </section>
 
     <section id="resultados" class="tab">
