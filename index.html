@@ -7,18 +7,24 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <header class="hero">
-    <div>
-      <p class="eyebrow">Mundial 2026</p>
-      <h1>Quiniela Mundialista</h1>
-      <p>Pronósticos, resultados oficiales, tabla diaria y ranking general.</p>
-    </div>
+
+  <div class="login-overlay" id="loginBox">
     <div class="login-card">
+      <h2>Ingresar a la quiniela</h2>
       <input id="email" placeholder="Correo" type="email" />
       <input id="password" placeholder="Contraseña" type="password" />
       <button id="loginBtn">Ingresar / Registrarse</button>
-      <button id="logoutBtn" class="ghost">Cerrar sesión</button>
       <small id="userInfo">Sin sesión</small>
+    </div>
+  </div>
+
+  <header class="hero">
+    <div class="hero-center">
+      <div id="welcomeUser" class="welcome-user"></div>
+      <p class="eyebrow">Mundial 2026</p>
+      <h1>Quiniela Mundialista</h1>
+      <p class="hero-text">Pronósticos, resultados oficiales, tabla diaria y ranking general.</p>
+      <button id="logoutBtn" class="ghost logout-main">Cerrar sesión</button>
     </div>
   </header>
 
@@ -48,13 +54,9 @@
         <h3>REGLAS OFICIALES – QUINIELA MUNDIALISTA 2026</h3>
 
         <p><strong>1.</strong> Cada participante deberá ingresar sus pronósticos antes de que inicie cada partido. Una vez ingresados los posibles resultados y enviados en el sistema, ya no podrán ser modificados bajo ninguna circunstancia.</p>
-
         <p><strong>2.</strong> Los marcadores válidos serán únicamente los correspondientes a los 90 minutos reglamentarios del juego.</p>
-
         <p><strong>3.</strong> No se tomarán en cuenta tiempos extras, tiempo suplementario ni tanda de penales.</p>
-
         <p><strong>4.</strong> Todo partido que haya iniciado quedará automáticamente bloqueado para ingreso o modificación de pronósticos.</p>
-
         <p><strong>5.</strong> Si el participante no ingresa algún marcador o deja incompleto el pronóstico de un partido, este se considerará inválido y no tendrá punteo alguno.</p>
 
         <p><strong>6.</strong> Sistema de puntuación:</p>
