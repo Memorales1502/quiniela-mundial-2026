@@ -16,7 +16,9 @@ import {
   getDoc,
   getDocs,
   collection,
-  serverTimestamp
+  serverTimestamp,
+  query,
+  where
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
 import { firebaseConfig, ADMIN_EMAILS } from "./firebase-config.js";
@@ -28,24 +30,20 @@ const db = getFirestore(app);
 
 let currentUser = null;
 let currentPlayerName = "";
+
 let results = {};
+let resultsLoaded = false;
+
+let userPredictions = {};
+let userPredictionsLoaded = false;
+
+let allPredictionsCache = null;
 
 const $ = (id) => document.getElementById(id);
 
-const getKickoffDate = (match) => {
-  return new Date(`${match.date}T${match.time || "00:00"}:00-06:00`);
+const getCurrentTabId = () => {
+  return document.querySelector(".tab.active")?.id || "reglas";
 };
-
-const outcome = (home, away) => {
-  if (home === away) return "DRAW";
-  return home > away ? "HOME" : "AWAY";
-};
-
-const isStarted = (match) => Date.now() >= getKickoffDate(match).getTime();
-
-const hasResult = (matchId) =>
-  results[matchId]?.homeScore !== undefined &&
-  results[matchId]?.awayScore !== undefined;
 
 const cleanNameFromEmail = (email) => {
   if (!email) return "";
@@ -62,21 +60,23 @@ const getDisplayName = (user) => {
   return cleanNameFromEmail(user?.email);
 };
 
-async function loadUserProfile(user) {
-  if (!user) return "";
+const getKickoffDate = (match) => {
+  return new Date(`${match.date}T${match.time || "00:00"}:00-06:00`);
+};
 
-  const userRef = doc(db, "users", user.uid);
-  const snap = await getDoc(userRef);
+const isStarted = (match) => {
+  return Date.now() >= getKickoffDate(match).getTime();
+};
 
-  if (snap.exists()) {
-    const data = snap.data();
-    if (data.name) return data.name;
-  }
+const outcome = (home, away) => {
+  if (home === away) return "DRAW";
+  return home > away ? "HOME" : "AWAY";
+};
 
-  if (user.displayName) return user.displayName;
-
-  return cleanNameFromEmail(user.email);
-}
+const hasResult = (matchId) => {
+  return results[matchId]?.homeScore !== undefined &&
+    results[matchId]?.awayScore !== undefined;
+};
 
 const isInvalidPrediction = (prediction) => {
   return !prediction ||
@@ -107,6 +107,7 @@ const scorePoints = (prediction, result) => {
 
   let points = 0;
   let goals = 0;
+
   const winner = outcome(ph, pa) === outcome(rh, ra);
 
   if (ph === rh) {
@@ -130,21 +131,76 @@ const isLockedForInput = (match, prediction) => {
   return Boolean(prediction?.submitted) || hasResult(match.id) || isStarted(match);
 };
 
-async function loadResults() {
+async function loadUserProfile(user) {
+  if (!user) return "";
+
+  const userRef = doc(db, "users", user.uid);
+  const snap = await getDoc(userRef);
+
+  if (snap.exists()) {
+    const data = snap.data();
+    if (data.name) return data.name;
+  }
+
+  if (user.displayName) return user.displayName;
+
+  return cleanNameFromEmail(user.email);
+}
+
+async function ensureResultsLoaded(force = false) {
+  if (resultsLoaded && !force) return;
+
   results = {};
+
   const snap = await getDocs(collection(db, "results"));
+
   snap.forEach((d) => {
     results[d.id] = d.data();
   });
+
+  resultsLoaded = true;
 }
 
-async function getPrediction(matchId) {
-  if (!currentUser) return null;
+async function loadUserPredictions(force = false) {
+  if (!currentUser) return;
 
-  const ref = doc(db, "predictions", `${currentUser.uid}_${matchId}`);
-  const snap = await getDoc(ref);
+  if (userPredictionsLoaded && !force) return;
 
-  return snap.exists() ? snap.data() : null;
+  userPredictions = {};
+
+  const q = query(
+    collection(db, "predictions"),
+    where("uid", "==", currentUser.uid)
+  );
+
+  const snap = await getDocs(q);
+
+  snap.forEach((d) => {
+    const data = d.data();
+    userPredictions[data.matchId] = data;
+  });
+
+  userPredictionsLoaded = true;
+}
+
+async function loadAllPredictions(force = false) {
+  if (allPredictionsCache && !force) return allPredictionsCache;
+
+  const snap = await getDocs(collection(db, "predictions"));
+
+  allPredictionsCache = [];
+
+  snap.forEach((d) => {
+    allPredictionsCache.push(d.data());
+  });
+
+  return allPredictionsCache;
+}
+
+function invalidatePredictionsCache() {
+  userPredictionsLoaded = false;
+  userPredictions = {};
+  allPredictionsCache = null;
 }
 
 function downloadCSV(rows, filename) {
@@ -168,6 +224,7 @@ function downloadCSV(rows, filename) {
 
   link.href = url;
   link.download = filename;
+
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -181,12 +238,15 @@ async function saveAllPredictions() {
     return;
   }
 
+  await ensureResultsLoaded();
+  await loadUserPredictions();
+
   const alreadySubmitted = [];
   const blockedByGame = [];
   const toSave = [];
 
   for (const match of MATCHES) {
-    const existing = await getPrediction(match.id);
+    const existing = userPredictions[match.id];
 
     if (existing?.submitted) {
       alreadySubmitted.push(match);
@@ -241,7 +301,7 @@ async function saveAllPredictions() {
   const playerName = getDisplayName(currentUser);
 
   for (const item of toSave) {
-    await setDoc(doc(db, "predictions", `${currentUser.uid}_${item.match.id}`), {
+    const data = {
       uid: currentUser.uid,
       email: currentUser.email,
       playerName,
@@ -252,13 +312,22 @@ async function saveAllPredictions() {
       submitted: true,
       locked: true,
       submittedAt: serverTimestamp()
-    });
+    };
+
+    await setDoc(
+      doc(db, "predictions", `${currentUser.uid}_${item.match.id}`),
+      data
+    );
+
+    userPredictions[item.match.id] = data;
   }
+
+  allPredictionsCache = null;
 
   downloadPredictionsCSV(toSave, submittedAt);
 
   alert("Pronósticos enviados correctamente. Se descargó tu constancia.");
-  await renderAll();
+  await renderActiveTab();
 }
 
 function downloadPredictionsCSV(items, submittedAt) {
@@ -313,8 +382,12 @@ async function downloadPlayerPredictionsCSV(playerKey) {
     return;
   }
 
-  const predSnap = await getDocs(collection(db, "predictions"));
+  await ensureResultsLoaded();
+
+  const predictions = await loadAllPredictions();
+
   const rows = [];
+
   let playerName = "";
   let playerEmail = "";
 
@@ -322,6 +395,7 @@ async function downloadPlayerPredictionsCSV(playerKey) {
   rows.push(["Descargado por", currentUser.email]);
   rows.push(["Fecha de descarga", new Date().toLocaleString("es-GT")]);
   rows.push([]);
+
   rows.push([
     "Jugador",
     "Correo",
@@ -339,8 +413,7 @@ async function downloadPlayerPredictionsCSV(playerKey) {
     "Puntos"
   ]);
 
-  predSnap.forEach((docSnap) => {
-    const prediction = docSnap.data();
+  predictions.forEach((prediction) => {
     const key = prediction.email || prediction.uid || "sin-correo";
 
     if (key !== playerKey) return;
@@ -390,11 +463,11 @@ async function downloadPlayerPredictionsCSV(playerKey) {
 }
 
 async function buildPlayerDownloadCards() {
-  const predSnap = await getDocs(collection(db, "predictions"));
+  const predictions = await loadAllPredictions();
+
   const players = {};
 
-  predSnap.forEach((docSnap) => {
-    const prediction = docSnap.data();
+  predictions.forEach((prediction) => {
     const key = prediction.email || prediction.uid || "sin-correo";
 
     if (!players[key]) {
@@ -478,8 +551,16 @@ async function saveResult(match) {
     admin: currentUser.email
   });
 
-  await loadResults();
-  await renderAll();
+  results[match.id] = {
+    matchId: match.id,
+    homeScore: Number(h),
+    awayScore: Number(a),
+    admin: currentUser.email
+  };
+
+  resultsLoaded = true;
+
+  await renderActiveTab();
 }
 
 function card(match, prediction) {
@@ -535,11 +616,14 @@ async function renderQuiniela() {
     return;
   }
 
-  const html = [];
+  $("matchesList").innerHTML = '<p class="note">Cargando partidos...</p>';
 
-  for (const match of MATCHES) {
-    html.push(card(match, await getPrediction(match.id)));
-  }
+  await ensureResultsLoaded();
+  await loadUserPredictions();
+
+  const html = MATCHES.map((match) => {
+    return card(match, userPredictions[match.id]);
+  });
 
   $("matchesList").innerHTML = html.join("");
 
@@ -551,7 +635,11 @@ async function renderQuiniela() {
   }
 }
 
-function renderResults() {
+async function renderResults() {
+  $("resultsList").innerHTML = '<p class="note">Cargando resultados...</p>';
+
+  await ensureResultsLoaded();
+
   $("resultsList").innerHTML = MATCHES.map((match) => {
     const result = results[match.id];
 
@@ -572,6 +660,10 @@ async function renderAdmin() {
     $("adminList").innerHTML = '<p class="note">Ingresa con un correo administrador.</p>';
     return;
   }
+
+  $("adminList").innerHTML = '<p class="note">Cargando panel administrador...</p>';
+
+  await ensureResultsLoaded();
 
   const playerDownloadsHtml = await buildPlayerDownloadCards();
 
@@ -618,11 +710,13 @@ async function renderAdmin() {
 }
 
 async function buildScores(dateFilter = null) {
-  const predSnap = await getDocs(collection(db, "predictions"));
+  await ensureResultsLoaded();
+
+  const predictions = await loadAllPredictions();
+
   const users = {};
 
-  predSnap.forEach((docSnap) => {
-    const prediction = docSnap.data();
+  predictions.forEach((prediction) => {
     const match = MATCHES.find((item) => item.id === prediction.matchId);
 
     if (!match) return;
@@ -632,7 +726,7 @@ async function buildScores(dateFilter = null) {
 
     users[playerKey] ??= {
       email: playerKey,
-      playerName: prediction.playerName || playerKey.split("@")[0],
+      playerName: prediction.playerName || cleanNameFromEmail(playerKey),
       pts: 0,
       exactos: 0,
       ganadores: 0,
@@ -642,9 +736,16 @@ async function buildScores(dateFilter = null) {
     const score = scorePoints(prediction, results[prediction.matchId]);
 
     users[playerKey].pts += score.points;
-    if (score.exact) users[playerKey].exactos += 1;
-    if (score.winner) users[playerKey].ganadores += 1;
-    users[playerKey].goles += score.goals;
+
+    if (score.exact) {
+      users[playerKey].exactos += 1;
+    }
+
+    if (score.winner) {
+      users[playerKey].ganadores += 1;
+    }
+
+    users[playerKey].goles += score.goles ?? score.goals ?? 0;
   });
 
   return Object.values(users).sort((a, b) =>
@@ -657,6 +758,8 @@ async function buildScores(dateFilter = null) {
 }
 
 async function renderRanking() {
+  $("rankingTable").innerHTML = '<p class="note">Cargando ranking...</p>';
+
   const rows = await buildScores();
 
   $("rankingTable").innerHTML = `
@@ -691,6 +794,8 @@ async function renderDaily() {
   const date = $("dailyDate").value || new Date().toISOString().slice(0, 10);
   $("dailyDate").value = date;
 
+  $("dailyTable").innerHTML = '<p class="note">Cargando tabla diaria...</p>';
+
   const rows = await buildScores(date);
 
   $("dailyTable").innerHTML = `
@@ -721,20 +826,38 @@ async function renderDaily() {
   `;
 }
 
-async function renderAll() {
-  await loadResults();
-  await renderQuiniela();
-  renderResults();
-  await renderAdmin();
-  await renderRanking();
-  await renderDaily();
+async function renderActiveTab() {
+  const tabId = getCurrentTabId();
+
+  if (tabId === "quiniela") {
+    await renderQuiniela();
+  }
+
+  if (tabId === "resultados") {
+    await renderResults();
+  }
+
+  if (tabId === "admin") {
+    await renderAdmin();
+  }
+
+  if (tabId === "ranking") {
+    await renderRanking();
+  }
+
+  if (tabId === "diaria") {
+    await renderDaily();
+  }
 }
 
 document.querySelectorAll(".tabs button").forEach((btn) => {
-  btn.addEventListener("click", () => {
+  btn.addEventListener("click", async () => {
     document.querySelectorAll(".tabs button, .tab").forEach((x) => x.classList.remove("active"));
+
     btn.classList.add("active");
     $(btn.dataset.tab).classList.add("active");
+
+    await renderActiveTab();
   });
 });
 
@@ -825,6 +948,11 @@ onAuthStateChanged(auth, async (user) => {
   const welcomeUser = $("welcomeUser");
   const userInfo = $("userInfo");
 
+  resultsLoaded = false;
+  userPredictionsLoaded = false;
+  userPredictions = {};
+  allPredictionsCache = null;
+
   if (user) {
     currentPlayerName = await loadUserProfile(user);
     const name = getDisplayName(user);
@@ -856,5 +984,5 @@ onAuthStateChanged(auth, async (user) => {
     }
   }
 
-  await renderAll();
+  await renderActiveTab();
 });
