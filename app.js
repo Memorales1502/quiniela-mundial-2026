@@ -656,7 +656,7 @@ onAuthStateChanged(auth, async (user) => {
     const name = getDisplayName(user);
 
     if (welcomeUser) {
-      welcomeUser.textContent = `Bienvenido, ${name}`;
+      welcomeUser.textContent = `Bienvenid@, ${name}`;
     }
 
     if (userInfo) {
