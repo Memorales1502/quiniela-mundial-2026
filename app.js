@@ -791,124 +791,101 @@ async function renderRanking() {
 }
 
 async function renderOfficialRanking() {
+  const excludedDate = "2026-06-12";
 
-const excludedDate="2026-06-12";
+  $("rankingOfficialTable").innerHTML =
+    '<p class="note">Calculando ranking oficial...</p>';
 
-$("#rankingOfficialTable").innerHTML=
-'<p class="note">Calculando ranking oficial...</p>';
+  await ensureResultsLoaded();
 
-await ensureResultsLoaded();
+  const predictions = await loadAllPredictions();
+  const users = {};
 
-const predictions=
-await loadAllPredictions();
+  predictions.forEach((prediction) => {
+    const match = MATCHES.find((m) => m.id === prediction.matchId);
 
-const users={};
+    if (!match) return;
 
-predictions.forEach((prediction)=>{
+    // Excluir completamente los partidos del viernes 12 de junio de 2026
+    if (match.date === excludedDate) return;
 
-const match=
-MATCHES.find(
-m=>m.id===prediction.matchId
-);
+    const key = prediction.email || prediction.uid || "sin-correo";
 
-if(!match)return;
+    if (!users[key]) {
+      users[key] = {
+        playerName: prediction.playerName || cleanNameFromEmail(key),
+        pts: 0,
+        exactos: 0,
+        ganadores: 0,
+        goles: 0
+      };
+    }
 
-if(match.date===excludedDate){
-return;
-}
+    const result = results[prediction.matchId];
 
-const key=
-prediction.email||
-prediction.uid;
+    // Si el partido todavía no tiene resultado oficial, no suma
+    if (!result) return;
 
-users[key]??={
+    const score = scorePoints(prediction, result);
 
-playerName:
-prediction.playerName,
+    users[key].pts += score.points;
 
-pts:0,
-exactos:0,
-ganadores:0,
-goles:0
+    if (score.exact) {
+      users[key].exactos += 1;
+    }
 
-};
+    if (score.winner) {
+      users[key].ganadores += 1;
+    }
 
-const score=
-scorePoints(
-prediction,
-results[prediction.matchId]
-);
+    users[key].goles += score.goals || 0;
+  });
 
-users[key].pts+=score.points;
+  const rows = Object.values(users).sort((a, b) =>
+    b.pts - a.pts ||
+    b.exactos - a.exactos ||
+    b.ganadores - a.ganadores ||
+    b.goles - a.goles ||
+    a.playerName.localeCompare(b.playerName)
+  );
 
-if(score.exact)
-users[key].exactos++;
+  if (rows.length === 0) {
+    $("rankingOfficialTable").innerHTML = `
+      <div class="rules-text">
+        <p class="note">
+          Aún no hay puntos oficiales acumulados a partir del sábado 13 de junio de 2026.
+        </p>
+      </div>
+    `;
+    return;
+  }
 
-if(score.winner)
-users[key].ganadores++;
-
-users[key].goles+=
-score.goals;
-
-});
-
-const rows=
-Object.values(users)
-.sort((a,b)=>
-
-b.pts-a.pts||
-b.exactos-a.exactos||
-b.ganadores-a.ganadores||
-b.goles-a.goles
-
-);
-
-$("#rankingOfficialTable").innerHTML=
-`
-<table>
-
-<thead>
-
-<tr>
-
-<th>#</th>
-<th>Jugador</th>
-<th>Puntos Oficiales</th>
-<th>Exactos</th>
-<th>Ganadores</th>
-<th>Goles</th>
-
-</tr>
-
-</thead>
-
-<tbody>
-
-${rows.map((r,i)=>`
-
-<tr>
-
-<td>${i+1}</td>
-
-<td>${r.playerName}</td>
-
-<td>${r.pts}</td>
-
-<td>${r.exactos}</td>
-
-<td>${r.ganadores}</td>
-
-<td>${r.goles}</td>
-
-</tr>
-
-`).join("")}
-
-</tbody>
-
-</table>
-`;
-
+  $("rankingOfficialTable").innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Jugador</th>
+          <th>Puntos Oficiales</th>
+          <th>Exactos</th>
+          <th>Ganadores</th>
+          <th>Goles</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows.map((r, i) => `
+          <tr>
+            <td>${i + 1}</td>
+            <td>${r.playerName}</td>
+            <td>${r.pts}</td>
+            <td>${r.exactos}</td>
+            <td>${r.ganadores}</td>
+            <td>${r.goles}</td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+  `;
 }
 
 async function renderDaily() {
