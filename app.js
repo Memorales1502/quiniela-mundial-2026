@@ -790,6 +790,127 @@ async function renderRanking() {
   `;
 }
 
+async function renderOfficialRanking() {
+
+const excludedDate="2026-06-12";
+
+$("#rankingOfficialTable").innerHTML=
+'<p class="note">Calculando ranking oficial...</p>';
+
+await ensureResultsLoaded();
+
+const predictions=
+await loadAllPredictions();
+
+const users={};
+
+predictions.forEach((prediction)=>{
+
+const match=
+MATCHES.find(
+m=>m.id===prediction.matchId
+);
+
+if(!match)return;
+
+if(match.date===excludedDate){
+return;
+}
+
+const key=
+prediction.email||
+prediction.uid;
+
+users[key]??={
+
+playerName:
+prediction.playerName,
+
+pts:0,
+exactos:0,
+ganadores:0,
+goles:0
+
+};
+
+const score=
+scorePoints(
+prediction,
+results[prediction.matchId]
+);
+
+users[key].pts+=score.points;
+
+if(score.exact)
+users[key].exactos++;
+
+if(score.winner)
+users[key].ganadores++;
+
+users[key].goles+=
+score.goals;
+
+});
+
+const rows=
+Object.values(users)
+.sort((a,b)=>
+
+b.pts-a.pts||
+b.exactos-a.exactos||
+b.ganadores-a.ganadores||
+b.goles-a.goles
+
+);
+
+$("#rankingOfficialTable").innerHTML=
+`
+<table>
+
+<thead>
+
+<tr>
+
+<th>#</th>
+<th>Jugador</th>
+<th>Puntos Oficiales</th>
+<th>Exactos</th>
+<th>Ganadores</th>
+<th>Goles</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+${rows.map((r,i)=>`
+
+<tr>
+
+<td>${i+1}</td>
+
+<td>${r.playerName}</td>
+
+<td>${r.pts}</td>
+
+<td>${r.exactos}</td>
+
+<td>${r.ganadores}</td>
+
+<td>${r.goles}</td>
+
+</tr>
+
+`).join("")}
+
+</tbody>
+
+</table>
+`;
+
+}
+
 async function renderDaily() {
   const date = $("dailyDate").value || new Date().toISOString().slice(0, 10);
   $("dailyDate").value = date;
@@ -843,6 +964,10 @@ async function renderActiveTab() {
 
   if (tabId === "ranking") {
     await renderRanking();
+  }
+
+  if(tabId==="rankingOficial"){
+    await renderOfficialRanking();
   }
 
   if (tabId === "diaria") {
