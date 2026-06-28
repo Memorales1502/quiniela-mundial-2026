@@ -28,6 +28,34 @@
     </div>
   </div>
 
+  <div id="noticeModal" class="notice-modal">
+    <div class="notice-box">
+      <div class="notice-icon">📢</div>
+
+      <h2>Aviso Importante</h2>
+
+      <h3>16avos de Final habilitados</h3>
+
+      <p>
+        Ya puedes ingresar tus pronósticos correspondientes a los
+        <strong>16avos de Final</strong> de la Quiniela Mundialista 2026.
+      </p>
+
+      <div class="notice-date">
+        <strong>Fecha límite para enviar pronósticos:</strong><br>
+        Domingo 28 de junio de 2026<br>
+        <strong>Antes de las 13:00 horas</strong>
+      </div>
+
+      <div class="notice-payment">
+        <strong>Recordatorio de cuota de participación</strong><br>
+        Si aún tienes pendiente el pago de la cuota de participación, te agradecemos realizarlo a la mayor brevedad posible para mantener activa tu participación en la quiniela.
+      </div>
+
+      <button id="closeNoticeBtn">ENTENDIDO</button>
+    </div>
+  </div>
+
   <header class="hero">
     <div class="hero-center">
       <div id="welcomeUser" class="welcome-user"></div>
@@ -72,22 +100,22 @@
 
         <p><strong>5.</strong> Sistema de puntuación:</p>
 
-        <p><strong>A. 🏆 Marcador exacto: 5 puntos</strong><br>Si aciertas exactamente el marcador final del partido (ejemplo: pronóstico 2–1 y resultado oficial 2–1), obtienes automáticamente los 5 puntos completos. ⚠️ Importante: Si obtienes marcador exacto, NO se suman puntos adicionales por goles o ganador.</p>
+        <p><strong>A. 🏆 Marcador exacto: 5 puntos</strong><br>Si aciertas exactamente el marcador final del partido, obtienes automáticamente los 5 puntos completos. Importante: Si obtienes marcador exacto, NO se suman puntos adicionales por goles o ganador.</p>
         <p><strong>B. ⚽ Goles del Equipo 1: 1 punto</strong><br>Si aciertas la cantidad exacta de goles anotados por el Equipo 1.</p>
         <p><strong>C. ⚽ Goles del Equipo 2: 1 punto</strong><br>Si aciertas la cantidad exacta de goles anotados por el Equipo 2.</p>
         <p><strong>D. 🏅 Ganador o empate: 1 punto</strong><br>Si aciertas correctamente el ganador del partido o si pronosticas empate y el resultado oficial también fue empate.</p>
 
         <p><strong>6.</strong> Puntaje máximo por partido: 5 puntos.</p>
-        <p><strong>7.</strong> Si el participante acierta el marcador exacto, se otorgarán únicamente 5 puntos en total. No se sumarán puntos adicionales por goles o ganador, ya que el marcador exacto incluye dichos aciertos.</p>
+        <p><strong>7.</strong> Si el participante acierta el marcador exacto, se otorgarán únicamente 5 puntos en total.</p>
         <p><strong>8.</strong> Si el participante no acierta el marcador exacto, podrá sumar puntos parciales por goles acertados y/o ganador acertado.</p>
         <p><strong>9.</strong> El ranking general se actualizará conforme se registren los resultados oficiales al terminar cada partido por el administrador.</p>
 
         <p><strong>10.</strong> Ejemplos de puntuación:</p>
         <ol type="a">
           <li>Pronóstico 2–1 - Resultado oficial 2–1 = 5 pts.</li>
-          <li>Pronóstico 2–0 - Resultado oficial 2–1 = 2 pts (gol equipo 1 + ganador).</li>
-          <li>Pronóstico 1–1 - Resultado oficial 2–2 = 1 pt (empate).</li>
-          <li>Pronóstico 0–1 - Resultado oficial 2–1 = 1 pt (gol equipo 2).</li>
+          <li>Pronóstico 2–0 - Resultado oficial 2–1 = 2 pts.</li>
+          <li>Pronóstico 1–1 - Resultado oficial 2–2 = 1 pt.</li>
+          <li>Pronóstico 0–1 - Resultado oficial 2–1 = 1 pt.</li>
           <li>Pronóstico 3–0 - Resultado oficial 1–2 = 0 pts.</li>
         </ol>
         
@@ -96,7 +124,7 @@
           <li>Mayor cantidad de marcadores exactos.</li>
           <li>Mayor cantidad de ganadores acertados.</li>
           <li>Mayor cantidad de goles acertados.</li>
-          <li>Si persiste el empate, el método de desempate será por la dinámica definida por los participantes de la quiniela.</li>
+          <li>Si persiste el empate, el método de desempate será por la dinámica definida por los participantes.</li>
         </ol>
       </div>
     </section>
@@ -104,34 +132,13 @@
     <section id="quiniela" class="tab">
       <h2>Mi quiniela - Fase de grupos</h2>
       <p class="note">
-        Llena todos tus marcadores de fase de grupos y presiona una sola vez el botón de envío. Al enviar, tus pronósticos quedarán bloqueados y se descargará una constancia.
+        Llena todos tus marcadores de fase de grupos y presiona una sola vez el botón de envío.
       </p>
 
       <div id="matchesList" class="match-list"></div>
 
-      <div
-        id="submitArea"
-        style="
-          display:flex;
-          justify-content:center;
-          align-items:center;
-          margin-top:40px;
-          margin-bottom:60px;
-          width:100%;
-        "
-      >
-        <button
-          id="submitAllBtn"
-          style="
-            width:100%;
-            max-width:620px;
-            min-height:78px;
-            font-size:24px;
-            font-weight:800;
-            border-radius:18px;
-            letter-spacing:.04em;
-          "
-        >
+      <div id="submitArea" style="display:flex;justify-content:center;align-items:center;margin-top:40px;margin-bottom:60px;width:100%;">
+        <button id="submitAllBtn" style="width:100%;max-width:620px;min-height:78px;font-size:24px;font-weight:800;border-radius:18px;letter-spacing:.04em;">
           ENVIAR PRONÓSTICOS FASE DE GRUPOS
         </button>
       </div>
@@ -145,29 +152,8 @@
 
       <div id="matches16List" class="match-list"></div>
 
-      <div
-        id="submit16Area"
-        style="
-          display:flex;
-          justify-content:center;
-          align-items:center;
-          margin-top:40px;
-          margin-bottom:60px;
-          width:100%;
-        "
-      >
-        <button
-          id="submit16Btn"
-          style="
-            width:100%;
-            max-width:620px;
-            min-height:78px;
-            font-size:24px;
-            font-weight:800;
-            border-radius:18px;
-            letter-spacing:.04em;
-          "
-        >
+      <div id="submit16Area" style="display:flex;justify-content:center;align-items:center;margin-top:40px;margin-bottom:60px;width:100%;">
+        <button id="submit16Btn" style="width:100%;max-width:620px;min-height:78px;font-size:24px;font-weight:800;border-radius:18px;letter-spacing:.04em;">
           ENVIAR PRONÓSTICOS 16AVOS
         </button>
       </div>
@@ -195,8 +181,7 @@
 
       <p class="note">
         Este Ranking Oficial inicia a partir del sábado 13 de junio de 2026.
-        Los puntos obtenidos el viernes 12 de junio de 2026 no serán considerados, debido a que algunos jugadores ingresaron sus pronósticos durante la noche de ese mismo día.
-        Con el fin de mantener la igualdad de condiciones para todos los participantes, el acumulado oficial comenzará a contabilizarse desde el sábado 13 de junio de 2026.
+        Los puntos obtenidos el viernes 12 de junio de 2026 no serán considerados.
       </p>
       
       <div id="rankingOfficialTable"></div>
