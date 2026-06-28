@@ -4,143 +4,143 @@ export const MATCHES16 = [
     date: "2026-06-28",
     time: "13:00",
     group: "16avos",
-    home: "Equipo A",
-    away: "Equipo B",
-    venue: "Sede pendiente"
+    home: "Sudáfrica",
+    away: "Canadá",
+    venue: "SoFi Stadium, Los Ángeles"
   },
   {
     id: "R32-002",
-    date: "2026-06-28",
-    time: "16:00",
+    date: "2026-06-29",
+    time: "13:00",
     group: "16avos",
-    home: "Equipo A",
-    away: "Equipo B",
-    venue: "Sede pendiente"
+    home: "Brasil",
+    away: "Japón",
+    venue: "NRG Stadium, Houston"
   },
   {
     id: "R32-003",
-    date: "2026-06-28",
-    time: "19:00",
+    date: "2026-06-29",
+    time: "16:30",
     group: "16avos",
-    home: "Equipo A",
-    away: "Equipo B",
-    venue: "Sede pendiente"
+    home: "Alemania",
+    away: "Paraguay",
+    venue: "Gillette Stadium, Foxborough"
   },
   {
     id: "R32-004",
     date: "2026-06-29",
-    time: "13:00",
+    time: "20:00",
     group: "16avos",
-    home: "Equipo A",
-    away: "Equipo B",
-    venue: "Sede pendiente"
+    home: "Países Bajos",
+    away: "Marruecos",
+    venue: "Estadio Monterrey"
   },
   {
     id: "R32-005",
-    date: "2026-06-29",
-    time: "16:00",
+    date: "2026-06-30",
+    time: "13:00",
     group: "16avos",
-    home: "Equipo A",
-    away: "Equipo B",
-    venue: "Sede pendiente"
+    home: "Costa de Marfil",
+    away: "Noruega",
+    venue: "AT&T Stadium, Arlington"
   },
   {
     id: "R32-006",
-    date: "2026-06-29",
-    time: "19:00",
+    date: "2026-06-30",
+    time: "17:00",
     group: "16avos",
-    home: "Equipo A",
-    away: "Equipo B",
-    venue: "Sede pendiente"
+    home: "Francia",
+    away: "Suecia",
+    venue: "MetLife Stadium"
   },
   {
     id: "R32-007",
-    date: "2026-06-30",
+    date: "2026-07-01",
     time: "13:00",
     group: "16avos",
-    home: "Equipo A",
-    away: "Equipo B",
-    venue: "Sede pendiente"
+    home: "México",
+    away: "Ecuador",
+    venue: "Estadio Azteca"
   },
   {
     id: "R32-008",
-    date: "2026-06-30",
+    date: "2026-07-01",
     time: "16:00",
     group: "16avos",
-    home: "Equipo A",
-    away: "Equipo B",
-    venue: "Sede pendiente"
+    home: "Inglaterra",
+    away: "RD Congo",
+    venue: "BC Place"
   },
   {
     id: "R32-009",
-    date: "2026-06-30",
-    time: "19:00",
+    date: "2026-07-02",
+    time: "13:00",
     group: "16avos",
-    home: "Equipo A",
-    away: "Equipo B",
-    venue: "Sede pendiente"
+    home: "Estados Unidos",
+    away: "Bosnia y Herzegovina",
+    venue: "Seattle"
   },
   {
     id: "R32-010",
-    date: "2026-07-01",
-    time: "13:00",
+    date: "2026-07-02",
+    time: "16:00",
     group: "16avos",
-    home: "Equipo A",
-    away: "Equipo B",
-    venue: "Sede pendiente"
+    home: "Bélgica",
+    away: "Senegal",
+    venue: "Kansas City"
   },
   {
     id: "R32-011",
-    date: "2026-07-01",
-    time: "16:00",
+    date: "2026-07-03",
+    time: "13:00",
     group: "16avos",
-    home: "Equipo A",
-    away: "Equipo B",
-    venue: "Sede pendiente"
+    home: "Portugal",
+    away: "Croacia",
+    venue: "Miami"
   },
   {
     id: "R32-012",
-    date: "2026-07-01",
-    time: "19:00",
-    group: "16avos",
-    home: "Equipo A",
-    away: "Equipo B",
-    venue: "Sede pendiente"
-  },
-  {
-    id: "R32-013",
-    date: "2026-07-02",
-    time: "13:00",
-    group: "16avos",
-    home: "Equipo A",
-    away: "Equipo B",
-    venue: "Sede pendiente"
-  },
-  {
-    id: "R32-014",
-    date: "2026-07-02",
-    time: "16:00",
-    group: "16avos",
-    home: "Equipo A",
-    away: "Equipo B",
-    venue: "Sede pendiente"
-  },
-  {
-    id: "R32-015",
-    date: "2026-07-02",
-    time: "19:00",
-    group: "16avos",
-    home: "Equipo A",
-    away: "Equipo B",
-    venue: "Sede pendiente"
-  },
-  {
-    id: "R32-016",
     date: "2026-07-03",
     time: "16:00",
     group: "16avos",
-    home: "Equipo A",
-    away: "Equipo B",
-    venue: "Sede pendiente"
+    home: "Argentina",
+    away: "Cabo Verde",
+    venue: "Dallas"
+  },
+  {
+    id: "R32-013",
+    date: "2026-07-03",
+    time: "19:00",
+    group: "16avos",
+    home: "España",
+    away: "Austria",
+    venue: "Vancouver"
+  },
+  {
+    id: "R32-014",
+    date: "2026-07-04",
+    time: "13:00",
+    group: "16avos",
+    home: "Suiza",
+    away: "Argelia",
+    venue: "San Francisco"
+  },
+  {
+    id: "R32-015",
+    date: "2026-07-04",
+    time: "16:00",
+    group: "16avos",
+    home: "Colombia",
+    away: "Ghana",
+    venue: "Guadalajara"
+  },
+  {
+    id: "R32-016",
+    date: "2026-07-04",
+    time: "19:00",
+    group: "16avos",
+    home: "Australia",
+    away: "Egipto",
+    venue: "Ciudad de México"
   }
 ];
