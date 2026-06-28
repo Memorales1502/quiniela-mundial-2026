@@ -23,6 +23,7 @@ import {
 
 import { firebaseConfig, ADMIN_EMAILS } from "./firebase-config.js";
 import { MATCHES } from "./matches.js";
+import { MATCHES16 } from "./matches16.js";
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -32,12 +33,19 @@ let currentUser = null;
 let currentPlayerName = "";
 
 let results = {};
+let results16 = {};
+
 let resultsLoaded = false;
+let results16Loaded = false;
 
 let userPredictions = {};
+let userPredictions16 = {};
+
 let userPredictionsLoaded = false;
+let userPredictions16Loaded = false;
 
 let allPredictionsCache = null;
+let allPredictions16Cache = null;
 
 const $ = (id) => document.getElementById(id);
 
@@ -76,6 +84,11 @@ const outcome = (home, away) => {
 const hasResult = (matchId) => {
   return results[matchId]?.homeScore !== undefined &&
     results[matchId]?.awayScore !== undefined;
+};
+
+const hasResult16 = (matchId) => {
+  return results16[matchId]?.homeScore !== undefined &&
+    results16[matchId]?.awayScore !== undefined;
 };
 
 const isInvalidPrediction = (prediction) => {
@@ -127,8 +140,13 @@ const scorePoints = (prediction, result) => {
   return { points, exact: false, winner, goals };
 };
 
-const isLockedForInput = (match, prediction) => {
-  return Boolean(prediction?.submitted) || hasResult(match.id) || isStarted(match);
+const isLockedForInput = (match, prediction, phase = "groups") => {
+  const resultExists = phase === "16" ? hasResult16(match.id) : hasResult(match.id);
+
+  return Boolean(prediction?.submitted) ||
+    Boolean(prediction?.locked) ||
+    resultExists ||
+    isStarted(match);
 };
 
 async function loadUserProfile(user) {
@@ -161,6 +179,20 @@ async function ensureResultsLoaded(force = false) {
   resultsLoaded = true;
 }
 
+async function ensureResults16Loaded(force = false) {
+  if (results16Loaded && !force) return;
+
+  results16 = {};
+
+  const snap = await getDocs(collection(db, "results16"));
+
+  snap.forEach((d) => {
+    results16[d.id] = d.data();
+  });
+
+  results16Loaded = true;
+}
+
 async function loadUserPredictions(force = false) {
   if (!currentUser) return;
 
@@ -183,6 +215,28 @@ async function loadUserPredictions(force = false) {
   userPredictionsLoaded = true;
 }
 
+async function loadUserPredictions16(force = false) {
+  if (!currentUser) return;
+
+  if (userPredictions16Loaded && !force) return;
+
+  userPredictions16 = {};
+
+  const q = query(
+    collection(db, "predictions16"),
+    where("uid", "==", currentUser.uid)
+  );
+
+  const snap = await getDocs(q);
+
+  snap.forEach((d) => {
+    const data = d.data();
+    userPredictions16[data.matchId] = data;
+  });
+
+  userPredictions16Loaded = true;
+}
+
 async function loadAllPredictions(force = false) {
   if (allPredictionsCache && !force) return allPredictionsCache;
 
@@ -197,10 +251,18 @@ async function loadAllPredictions(force = false) {
   return allPredictionsCache;
 }
 
-function invalidatePredictionsCache() {
-  userPredictionsLoaded = false;
-  userPredictions = {};
-  allPredictionsCache = null;
+async function loadAllPredictions16(force = false) {
+  if (allPredictions16Cache && !force) return allPredictions16Cache;
+
+  const snap = await getDocs(collection(db, "predictions16"));
+
+  allPredictions16Cache = [];
+
+  snap.forEach((d) => {
+    allPredictions16Cache.push(d.data());
+  });
+
+  return allPredictions16Cache;
 }
 
 function downloadCSV(rows, filename) {
@@ -230,6 +292,55 @@ function downloadCSV(rows, filename) {
   document.body.removeChild(link);
 
   URL.revokeObjectURL(url);
+}
+
+function downloadPredictionsCSV(items, submittedAt, phaseName = "Fase de grupos") {
+  const playerName = getDisplayName(currentUser);
+  const email = currentUser.email;
+  const dateText = submittedAt.toLocaleString("es-GT");
+
+  const rows = [];
+
+  rows.push([`CONSTANCIA DE PRONÓSTICOS - ${phaseName.toUpperCase()} - QUINIELA MUNDIALISTA 2026`]);
+  rows.push(["Jugador", playerName]);
+  rows.push(["Correo", email]);
+  rows.push(["Fecha de envío", dateText]);
+  rows.push([]);
+  rows.push([
+    "ID",
+    "Fase",
+    "Fecha Partido",
+    "Hora",
+    "Grupo/Fase",
+    "Equipo 1",
+    "Pronóstico Equipo 1",
+    "Equipo 2",
+    "Pronóstico Equipo 2",
+    "Sede",
+    "Estado"
+  ]);
+
+  items.forEach((item) => {
+    rows.push([
+      item.match.id,
+      phaseName,
+      item.match.date,
+      item.match.time || "",
+      item.match.group || "",
+      item.match.home,
+      item.invalid ? "" : item.rawHome,
+      item.match.away,
+      item.invalid ? "" : item.rawAway,
+      item.match.venue || "",
+      item.invalid ? "INVÁLIDO - 0 PUNTOS" : "ENVIADO Y BLOQUEADO"
+    ]);
+  });
+
+  const safeEmail = email.replaceAll("@", "_").replaceAll(".", "_");
+  const fileDate = submittedAt.toISOString().slice(0, 10);
+  const safePhase = phaseName.toLowerCase().replaceAll(" ", "_");
+
+  downloadCSV(rows, `constancia_${safePhase}_${safeEmail}_${fileDate}.csv`);
 }
 
 async function saveAllPredictions() {
@@ -279,7 +390,7 @@ async function saveAllPredictions() {
 
   const invalidCount = toSave.filter((item) => item.invalid).length;
 
-  let message = `Vas a enviar ${toSave.length} pronósticos y quedarán bloqueados definitivamente.\n\n`;
+  let message = `Vas a enviar ${toSave.length} pronósticos de fase de grupos y quedarán bloqueados definitivamente.\n\n`;
 
   if (invalidCount > 0) {
     message += `Atención: ${invalidCount} pronóstico(s) están incompletos y se guardarán como INVÁLIDOS con 0 puntos.\n\n`;
@@ -305,6 +416,7 @@ async function saveAllPredictions() {
       uid: currentUser.uid,
       email: currentUser.email,
       playerName,
+      phase: "groups",
       matchId: item.match.id,
       homeScore: item.homeScore,
       awayScore: item.awayScore,
@@ -324,207 +436,109 @@ async function saveAllPredictions() {
 
   allPredictionsCache = null;
 
-  downloadPredictionsCSV(toSave, submittedAt);
+  downloadPredictionsCSV(toSave, submittedAt, "Fase de grupos");
 
   alert("Pronósticos enviados correctamente. Se descargó tu constancia.");
   await renderActiveTab();
 }
 
-function downloadPredictionsCSV(items, submittedAt) {
-  const playerName = getDisplayName(currentUser);
-  const email = currentUser.email;
-  const dateText = submittedAt.toLocaleString("es-GT");
-
-  const rows = [];
-
-  rows.push(["CONSTANCIA DE PRONÓSTICOS - QUINIELA MUNDIALISTA 2026"]);
-  rows.push(["Jugador", playerName]);
-  rows.push(["Correo", email]);
-  rows.push(["Fecha de envío", dateText]);
-  rows.push([]);
-  rows.push([
-    "ID",
-    "Fecha Partido",
-    "Hora",
-    "Grupo",
-    "Equipo 1",
-    "Pronóstico Equipo 1",
-    "Equipo 2",
-    "Pronóstico Equipo 2",
-    "Sede",
-    "Estado"
-  ]);
-
-  items.forEach((item) => {
-    rows.push([
-      item.match.id,
-      item.match.date,
-      item.match.time || "",
-      item.match.group || "",
-      item.match.home,
-      item.invalid ? "" : item.rawHome,
-      item.match.away,
-      item.invalid ? "" : item.rawAway,
-      item.match.venue || "",
-      item.invalid ? "INVÁLIDO - 0 PUNTOS" : "ENVIADO Y BLOQUEADO"
-    ]);
-  });
-
-  const safeEmail = email.replaceAll("@", "_").replaceAll(".", "_");
-  const fileDate = submittedAt.toISOString().slice(0, 10);
-
-  downloadCSV(rows, `constancia_quiniela_${safeEmail}_${fileDate}.csv`);
-}
-
-async function downloadPlayerPredictionsCSV(playerKey) {
-  if (!ADMIN_EMAILS.includes(currentUser?.email)) {
-    alert("No tienes permiso de administrador.");
+async function saveAllPredictions16() {
+  if (!currentUser) {
+    alert("Debes iniciar sesión.");
     return;
   }
 
-  await ensureResultsLoaded();
+  await ensureResults16Loaded();
+  await loadUserPredictions16();
 
-  const predictions = await loadAllPredictions();
+  const alreadySubmitted = [];
+  const blockedByGame = [];
+  const toSave = [];
 
-  const rows = [];
+  for (const match of MATCHES16) {
+    const existing = userPredictions16[match.id];
 
-  let playerName = "";
-  let playerEmail = "";
-
-  rows.push(["PRONÓSTICOS POR JUGADOR - QUINIELA MUNDIALISTA 2026"]);
-  rows.push(["Descargado por", currentUser.email]);
-  rows.push(["Fecha de descarga", new Date().toLocaleString("es-GT")]);
-  rows.push([]);
-
-  rows.push([
-    "Jugador",
-    "Correo",
-    "ID Partido",
-    "Fecha",
-    "Hora",
-    "Grupo",
-    "Equipo 1",
-    "Pronóstico Equipo 1",
-    "Equipo 2",
-    "Pronóstico Equipo 2",
-    "Sede",
-    "Estado",
-    "Resultado Oficial",
-    "Puntos"
-  ]);
-
-  predictions.forEach((prediction) => {
-    const key = prediction.email || prediction.uid || "sin-correo";
-
-    if (key !== playerKey) return;
-
-    const match = MATCHES.find((m) => m.id === prediction.matchId);
-    if (!match) return;
-
-    const result = results[prediction.matchId];
-    const score = scorePoints(prediction, result);
-
-    playerName = prediction.playerName || cleanNameFromEmail(prediction.email);
-    playerEmail = prediction.email || "";
-
-    rows.push([
-      playerName,
-      playerEmail,
-      match.id,
-      match.date,
-      match.time || "",
-      match.group || "",
-      match.home,
-      prediction.invalid ? "" : prediction.homeScore,
-      match.away,
-      prediction.invalid ? "" : prediction.awayScore,
-      match.venue || "",
-      prediction.invalid ? "INVÁLIDO - 0 PUNTOS" : "ENVIADO",
-      result ? `${result.homeScore}-${result.awayScore}` : "PENDIENTE",
-      score.points
-    ]);
-  });
-
-  if (rows.length <= 5) {
-    alert("No se encontraron pronósticos para este jugador.");
-    return;
-  }
-
-  const safeName = (playerName || playerEmail || "jugador")
-    .toLowerCase()
-    .replaceAll(" ", "_")
-    .replaceAll("@", "_")
-    .replaceAll(".", "_")
-    .replaceAll("/", "_");
-
-  const today = new Date().toISOString().slice(0, 10);
-
-  downloadCSV(rows, `pronosticos_${safeName}_${today}.csv`);
-}
-
-async function buildPlayerDownloadCards() {
-  const predictions = await loadAllPredictions();
-
-  const players = {};
-
-  predictions.forEach((prediction) => {
-    const key = prediction.email || prediction.uid || "sin-correo";
-
-    if (!players[key]) {
-      players[key] = {
-        key,
-        name: prediction.playerName || cleanNameFromEmail(prediction.email),
-        email: prediction.email || "",
-        count: 0
-      };
+    if (existing?.submitted) {
+      alreadySubmitted.push(match);
+      continue;
     }
 
-    players[key].count += 1;
-  });
+    if (hasResult16(match.id) || isStarted(match)) {
+      blockedByGame.push(match);
+      continue;
+    }
 
-  const list = Object.values(players).sort((a, b) =>
-    a.name.localeCompare(b.name)
-  );
+    const h = $(`p16h_${match.id}`)?.value ?? "";
+    const a = $(`p16a_${match.id}`)?.value ?? "";
+    const incomplete = h === "" || a === "";
 
-  if (list.length === 0) {
-    return `
-      <div class="rules-text">
-        <h3>Descargar pronósticos por jugador</h3>
-        <p class="note">Aún no hay pronósticos enviados.</p>
-      </div>
-    `;
+    toSave.push({
+      match,
+      homeScore: incomplete ? null : Number(h),
+      awayScore: incomplete ? null : Number(a),
+      rawHome: h,
+      rawAway: a,
+      invalid: incomplete
+    });
   }
 
-  return `
-    <div class="rules-text">
-      <h3>Descargar pronósticos por jugador</h3>
-      <p class="note">
-        Cada botón descarga únicamente los pronósticos enviados por ese jugador.
-      </p>
+  if (toSave.length === 0) {
+    alert("No hay pronósticos nuevos de 16avos para enviar.");
+    return;
+  }
 
-      <div class="match-list">
-        ${list.map((player) => `
-          <article class="match-card">
-            <div>
-              <div class="teams">${player.name}</div>
-              <div class="meta">${player.email}</div>
-              <div class="note">${player.count} pronóstico(s) enviados</div>
-            </div>
+  const invalidCount = toSave.filter((item) => item.invalid).length;
 
-            <div>
-              <span class="ok">Disponible</span>
-            </div>
+  let message = `Vas a enviar ${toSave.length} pronósticos de 16avos y quedarán bloqueados definitivamente.\n\n`;
 
-            <div class="score-inputs">
-              <button data-download-player="${player.key}">
-                Descargar CSV
-              </button>
-            </div>
-          </article>
-        `).join("")}
-      </div>
-    </div>
-  `;
+  if (invalidCount > 0) {
+    message += `Atención: ${invalidCount} pronóstico(s) están incompletos y se guardarán como INVÁLIDOS con 0 puntos.\n\n`;
+  }
+
+  if (blockedByGame.length > 0) {
+    message += `${blockedByGame.length} partido(s) ya están bloqueados por inicio o resultado oficial y no se enviarán.\n\n`;
+  }
+
+  if (alreadySubmitted.length > 0) {
+    message += `${alreadySubmitted.length} partido(s) ya habían sido enviados anteriormente y no se modificarán.\n\n`;
+  }
+
+  message += "¿Confirmas el envío?";
+
+  if (!confirm(message)) return;
+
+  const submittedAt = new Date();
+  const playerName = getDisplayName(currentUser);
+
+  for (const item of toSave) {
+    const data = {
+      uid: currentUser.uid,
+      email: currentUser.email,
+      playerName,
+      phase: "16avos",
+      matchId: item.match.id,
+      homeScore: item.homeScore,
+      awayScore: item.awayScore,
+      invalid: item.invalid,
+      submitted: true,
+      locked: true,
+      submittedAt: serverTimestamp()
+    };
+
+    await setDoc(
+      doc(db, "predictions16", `${currentUser.uid}_${item.match.id}`),
+      data
+    );
+
+    userPredictions16[item.match.id] = data;
+  }
+
+  allPredictions16Cache = null;
+
+  downloadPredictionsCSV(toSave, submittedAt, "16avos");
+
+  alert("Pronósticos de 16avos enviados correctamente. Se descargó tu constancia.");
+  await renderActiveTab();
 }
 
 async function saveResult(match) {
@@ -559,13 +573,55 @@ async function saveResult(match) {
   };
 
   resultsLoaded = true;
+  allPredictionsCache = null;
 
   await renderActiveTab();
 }
 
-function card(match, prediction) {
-  const locked = isLockedForInput(match, prediction);
-  const result = results[match.id];
+async function saveResult16(match) {
+  if (!ADMIN_EMAILS.includes(currentUser?.email)) {
+    alert("No tienes permiso de administrador.");
+    return;
+  }
+
+  const h = $(`r16h_${match.id}`).value;
+  const a = $(`r16a_${match.id}`).value;
+
+  if (h === "" || a === "") {
+    alert("Coloca el resultado final de los 90 minutos.");
+    return;
+  }
+
+  if (!confirm(`Guardar resultado oficial de 16avos: ${match.home} ${h}-${a} ${match.away}?`)) return;
+
+  await setDoc(doc(db, "results16", match.id), {
+    matchId: match.id,
+    homeScore: Number(h),
+    awayScore: Number(a),
+    updatedAt: serverTimestamp(),
+    admin: currentUser.email
+  });
+
+  results16[match.id] = {
+    matchId: match.id,
+    homeScore: Number(h),
+    awayScore: Number(a),
+    admin: currentUser.email
+  };
+
+  results16Loaded = true;
+  allPredictions16Cache = null;
+
+  await renderActiveTab();
+}
+
+function card(match, prediction, phase = "groups") {
+  const is16 = phase === "16";
+  const result = is16 ? results16[match.id] : results[match.id];
+  const locked = isLockedForInput(match, prediction, phase);
+
+  const inputHomeId = is16 ? `p16h_${match.id}` : `ph_${match.id}`;
+  const inputAwayId = is16 ? `p16a_${match.id}` : `pa_${match.id}`;
 
   const predictionText = prediction?.submitted
     ? prediction.invalid
@@ -575,9 +631,9 @@ function card(match, prediction) {
 
   let lockText = '<span class="ok">Abierto</span>';
 
-  if (prediction?.submitted) {
+  if (prediction?.submitted || prediction?.locked) {
     lockText = '<span class="locked">Bloqueado por envío</span>';
-  } else if (hasResult(match.id)) {
+  } else if (result) {
     lockText = '<span class="locked">Bloqueado por resultado oficial</span>';
   } else if (isStarted(match)) {
     lockText = '<span class="locked">Bloqueado por inicio del partido</span>';
@@ -587,7 +643,7 @@ function card(match, prediction) {
     <article class="match-card">
       <div>
         <div class="teams">${match.home} vs ${match.away}</div>
-        <div class="meta">${match.date} ${match.time || ""} · Grupo ${match.group} · ${match.venue}</div>
+        <div class="meta">${match.date} ${match.time || ""} · ${match.group || ""} · ${match.venue || ""}</div>
         <div>${predictionText}</div>
       </div>
 
@@ -598,9 +654,9 @@ function card(match, prediction) {
       </div>
 
       <div class="score-inputs">
-        <input id="ph_${match.id}" type="number" min="0" value="${prediction?.homeScore ?? ""}" ${locked ? "disabled" : ""}>
+        <input id="${inputHomeId}" type="number" min="0" value="${prediction?.homeScore ?? ""}" ${locked ? "disabled" : ""}>
         -
-        <input id="pa_${match.id}" type="number" min="0" value="${prediction?.awayScore ?? ""}" ${locked ? "disabled" : ""}>
+        <input id="${inputAwayId}" type="number" min="0" value="${prediction?.awayScore ?? ""}" ${locked ? "disabled" : ""}>
       </div>
     </article>
   `;
@@ -622,7 +678,7 @@ async function renderQuiniela() {
   await loadUserPredictions();
 
   const html = MATCHES.map((match) => {
-    return card(match, userPredictions[match.id]);
+    return card(match, userPredictions[match.id], "groups");
   });
 
   $("matchesList").innerHTML = html.join("");
@@ -635,24 +691,246 @@ async function renderQuiniela() {
   }
 }
 
+async function renderDieciseisavos() {
+  if (!currentUser) {
+    $("matches16List").innerHTML = '<p class="note">Ingresa o regístrate para llenar tus pronósticos de 16avos.</p>';
+
+    const submit16Btn = $("submit16Btn");
+    if (submit16Btn) submit16Btn.style.display = "none";
+
+    return;
+  }
+
+  $("matches16List").innerHTML = '<p class="note">Cargando partidos de 16avos...</p>';
+
+  await ensureResults16Loaded();
+  await loadUserPredictions16();
+
+  const html = MATCHES16.map((match) => {
+    return card(match, userPredictions16[match.id], "16");
+  });
+
+  $("matches16List").innerHTML = html.join("");
+
+  const submit16Btn = $("submit16Btn");
+
+  if (submit16Btn) {
+    submit16Btn.style.display = "inline-block";
+    submit16Btn.onclick = saveAllPredictions16;
+  }
+}
+
 async function renderResults() {
   $("resultsList").innerHTML = '<p class="note">Cargando resultados...</p>';
 
   await ensureResultsLoaded();
+  await ensureResults16Loaded();
 
-  $("resultsList").innerHTML = MATCHES.map((match) => {
+  const groupResults = MATCHES.map((match) => {
     const result = results[match.id];
 
     return `
       <article class="match-card">
         <div>
           <div class="teams">${match.home} vs ${match.away}</div>
-          <div class="meta">${match.date} ${match.time || ""} · Grupo ${match.group}</div>
+          <div class="meta">${match.date} ${match.time || ""} · ${match.group || ""} · Fase de grupos</div>
         </div>
         <div>${result ? `Final 90': <b>${result.homeScore}-${result.awayScore}</b>` : "Pendiente"}</div>
       </article>
     `;
   }).join("");
+
+  const round16Results = MATCHES16.map((match) => {
+    const result = results16[match.id];
+
+    return `
+      <article class="match-card">
+        <div>
+          <div class="teams">${match.home} vs ${match.away}</div>
+          <div class="meta">${match.date} ${match.time || ""} · 16avos</div>
+        </div>
+        <div>${result ? `Final 90': <b>${result.homeScore}-${result.awayScore}</b>` : "Pendiente"}</div>
+      </article>
+    `;
+  }).join("");
+
+  $("resultsList").innerHTML = `
+    <div class="rules-text">
+      <h3>Fase de grupos</h3>
+    </div>
+    ${groupResults}
+
+    <div class="rules-text" style="margin-top:24px;">
+      <h3>16avos de Final</h3>
+    </div>
+    ${round16Results}
+  `;
+}
+
+async function downloadPlayerPredictionsCSV(playerKey) {
+  if (!ADMIN_EMAILS.includes(currentUser?.email)) {
+    alert("No tienes permiso de administrador.");
+    return;
+  }
+
+  await ensureResultsLoaded();
+  await ensureResults16Loaded();
+
+  const predictionsGroups = await loadAllPredictions();
+  const predictions16 = await loadAllPredictions16();
+
+  const rows = [];
+
+  let playerName = "";
+  let playerEmail = "";
+
+  rows.push(["PRONÓSTICOS POR JUGADOR - QUINIELA MUNDIALISTA 2026"]);
+  rows.push(["Descargado por", currentUser.email]);
+  rows.push(["Fecha de descarga", new Date().toLocaleString("es-GT")]);
+  rows.push([]);
+
+  rows.push([
+    "Jugador",
+    "Correo",
+    "Fase",
+    "ID Partido",
+    "Fecha",
+    "Hora",
+    "Grupo/Fase",
+    "Equipo 1",
+    "Pronóstico Equipo 1",
+    "Equipo 2",
+    "Pronóstico Equipo 2",
+    "Sede",
+    "Estado",
+    "Resultado Oficial",
+    "Puntos"
+  ]);
+
+  const addRows = (predictions, matches, phaseName, resultMap) => {
+    predictions.forEach((prediction) => {
+      const key = prediction.email || prediction.uid || "sin-correo";
+
+      if (key !== playerKey) return;
+
+      const match = matches.find((m) => m.id === prediction.matchId);
+      if (!match) return;
+
+      const result = resultMap[prediction.matchId];
+      const score = scorePoints(prediction, result);
+
+      playerName = prediction.playerName || cleanNameFromEmail(prediction.email);
+      playerEmail = prediction.email || "";
+
+      rows.push([
+        playerName,
+        playerEmail,
+        phaseName,
+        match.id,
+        match.date,
+        match.time || "",
+        match.group || "",
+        match.home,
+        prediction.invalid ? "" : prediction.homeScore,
+        match.away,
+        prediction.invalid ? "" : prediction.awayScore,
+        match.venue || "",
+        prediction.invalid ? "INVÁLIDO - 0 PUNTOS" : "ENVIADO",
+        result ? `${result.homeScore}-${result.awayScore}` : "PENDIENTE",
+        score.points
+      ]);
+    });
+  };
+
+  addRows(predictionsGroups, MATCHES, "Fase de grupos", results);
+  addRows(predictions16, MATCHES16, "16avos", results16);
+
+  if (rows.length <= 5) {
+    alert("No se encontraron pronósticos para este jugador.");
+    return;
+  }
+
+  const safeName = (playerName || playerEmail || "jugador")
+    .toLowerCase()
+    .replaceAll(" ", "_")
+    .replaceAll("@", "_")
+    .replaceAll(".", "_")
+    .replaceAll("/", "_");
+
+  const today = new Date().toISOString().slice(0, 10);
+
+  downloadCSV(rows, `pronosticos_${safeName}_${today}.csv`);
+}
+
+async function buildPlayerDownloadCards() {
+  const predictionsGroups = await loadAllPredictions();
+  const predictions16 = await loadAllPredictions16();
+
+  const players = {};
+
+  const addPlayers = (predictions) => {
+    predictions.forEach((prediction) => {
+      const key = prediction.email || prediction.uid || "sin-correo";
+
+      if (!players[key]) {
+        players[key] = {
+          key,
+          name: prediction.playerName || cleanNameFromEmail(prediction.email),
+          email: prediction.email || "",
+          count: 0
+        };
+      }
+
+      players[key].count += 1;
+    });
+  };
+
+  addPlayers(predictionsGroups);
+  addPlayers(predictions16);
+
+  const list = Object.values(players).sort((a, b) =>
+    a.name.localeCompare(b.name)
+  );
+
+  if (list.length === 0) {
+    return `
+      <div class="rules-text">
+        <h3>Descargar pronósticos por jugador</h3>
+        <p class="note">Aún no hay pronósticos enviados.</p>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="rules-text">
+      <h3>Descargar pronósticos por jugador</h3>
+      <p class="note">
+        Cada botón descarga los pronósticos enviados por ese jugador en todas las fases disponibles.
+      </p>
+
+      <div class="match-list">
+        ${list.map((player) => `
+          <article class="match-card">
+            <div>
+              <div class="teams">${player.name}</div>
+              <div class="meta">${player.email}</div>
+              <div class="note">${player.count} pronóstico(s) enviados</div>
+            </div>
+
+            <div>
+              <span class="ok">Disponible</span>
+            </div>
+
+            <div class="score-inputs">
+              <button data-download-player="${player.key}">
+                Descargar CSV
+              </button>
+            </div>
+          </article>
+        `).join("")}
+      </div>
+    </div>
+  `;
 }
 
 async function renderAdmin() {
@@ -664,6 +942,7 @@ async function renderAdmin() {
   $("adminList").innerHTML = '<p class="note">Cargando panel administrador...</p>';
 
   await ensureResultsLoaded();
+  await ensureResults16Loaded();
 
   const playerDownloadsHtml = await buildPlayerDownloadCards();
 
@@ -671,7 +950,7 @@ async function renderAdmin() {
     <article class="match-card">
       <div>
         <div class="teams">${match.home} vs ${match.away}</div>
-        <div class="meta">${match.date} ${match.time || ""} · ${match.venue}</div>
+        <div class="meta">${match.date} ${match.time || ""} · ${match.venue || ""}</div>
       </div>
 
       <div class="score-inputs">
@@ -683,11 +962,27 @@ async function renderAdmin() {
     </article>
   `).join("");
 
+  const results16AdminHtml = MATCHES16.map((match) => `
+    <article class="match-card">
+      <div>
+        <div class="teams">${match.home} vs ${match.away}</div>
+        <div class="meta">${match.date} ${match.time || ""} · ${match.venue || ""}</div>
+      </div>
+
+      <div class="score-inputs">
+        <input id="r16h_${match.id}" type="number" min="0" value="${results16[match.id]?.homeScore ?? ""}">
+        -
+        <input id="r16a_${match.id}" type="number" min="0" value="${results16[match.id]?.awayScore ?? ""}">
+        <button data-result16="${match.id}">Guardar resultado 16avos</button>
+      </div>
+    </article>
+  `).join("");
+
   $("adminList").innerHTML = `
     ${playerDownloadsHtml}
 
     <div class="rules-text" style="margin-top:24px;">
-      <h3>Registrar resultados oficiales</h3>
+      <h3>Registrar resultados oficiales - Fase de grupos</h3>
       <p class="note">
         Ingresa los resultados oficiales de 90 minutos para calcular el ranking.
       </p>
@@ -695,6 +990,17 @@ async function renderAdmin() {
 
     <div class="match-list">
       ${resultsAdminHtml}
+    </div>
+
+    <div class="rules-text" style="margin-top:24px;">
+      <h3>Registrar resultados oficiales - 16avos</h3>
+      <p class="note">
+        Ingresa los resultados oficiales de 90 minutos de 16avos para que se sumen al ranking.
+      </p>
+    </div>
+
+    <div class="match-list">
+      ${results16AdminHtml}
     </div>
   `;
 
@@ -707,19 +1013,29 @@ async function renderAdmin() {
   MATCHES.forEach((match) => {
     document.querySelector(`[data-result="${match.id}"]`)?.addEventListener("click", () => saveResult(match));
   });
+
+  MATCHES16.forEach((match) => {
+    document.querySelector(`[data-result16="${match.id}"]`)?.addEventListener("click", () => saveResult16(match));
+  });
 }
 
-async function buildScores(dateFilter = null) {
+async function buildScores(dateFilter = null, officialOnly = false) {
   await ensureResultsLoaded();
+  await ensureResults16Loaded();
 
-  const predictions = await loadAllPredictions();
+  const predictionsGroups = await loadAllPredictions();
+  const predictions16 = await loadAllPredictions16();
 
   const users = {};
+  const excludedDate = "2026-06-12";
 
-  predictions.forEach((prediction) => {
-    const match = MATCHES.find((item) => item.id === prediction.matchId);
-
+  const addScore = (prediction, match, result, phaseName) => {
     if (!match) return;
+
+    if (officialOnly && phaseName === "Fase de grupos" && match.date === excludedDate) {
+      return;
+    }
+
     if (dateFilter && match.date !== dateFilter) return;
 
     const playerKey = prediction.email || prediction.uid || "sin-correo";
@@ -730,12 +1046,22 @@ async function buildScores(dateFilter = null) {
       pts: 0,
       exactos: 0,
       ganadores: 0,
-      goles: 0
+      goles: 0,
+      grupos: 0,
+      dieciseisavos: 0
     };
 
-    const score = scorePoints(prediction, results[prediction.matchId]);
+    const score = scorePoints(prediction, result);
 
     users[playerKey].pts += score.points;
+
+    if (phaseName === "Fase de grupos") {
+      users[playerKey].grupos += score.points;
+    }
+
+    if (phaseName === "16avos") {
+      users[playerKey].dieciseisavos += score.points;
+    }
 
     if (score.exact) {
       users[playerKey].exactos += 1;
@@ -745,7 +1071,17 @@ async function buildScores(dateFilter = null) {
       users[playerKey].ganadores += 1;
     }
 
-    users[playerKey].goles += score.goles ?? score.goals ?? 0;
+    users[playerKey].goles += score.goals || 0;
+  };
+
+  predictionsGroups.forEach((prediction) => {
+    const match = MATCHES.find((item) => item.id === prediction.matchId);
+    addScore(prediction, match, results[prediction.matchId], "Fase de grupos");
+  });
+
+  predictions16.forEach((prediction) => {
+    const match = MATCHES16.find((item) => item.id === prediction.matchId);
+    addScore(prediction, match, results16[prediction.matchId], "16avos");
   });
 
   return Object.values(users).sort((a, b) =>
@@ -768,7 +1104,9 @@ async function renderRanking() {
         <tr>
           <th>#</th>
           <th>Jugador</th>
-          <th>Puntos</th>
+          <th>Total</th>
+          <th>Grupos</th>
+          <th>16avos</th>
           <th>Exactos</th>
           <th>Ganadores</th>
           <th>Goles</th>
@@ -780,6 +1118,8 @@ async function renderRanking() {
             <td>${i + 1}</td>
             <td>${r.playerName}</td>
             <td>${r.pts}</td>
+            <td>${r.grupos}</td>
+            <td>${r.dieciseisavos}</td>
             <td>${r.exactos}</td>
             <td>${r.ganadores}</td>
             <td>${r.goles}</td>
@@ -791,63 +1131,10 @@ async function renderRanking() {
 }
 
 async function renderOfficialRanking() {
-  const excludedDate = "2026-06-12";
-
   $("rankingOfficialTable").innerHTML =
     '<p class="note">Calculando ranking oficial...</p>';
 
-  await ensureResultsLoaded();
-
-  const predictions = await loadAllPredictions();
-  const users = {};
-
-  predictions.forEach((prediction) => {
-    const match = MATCHES.find((m) => m.id === prediction.matchId);
-
-    if (!match) return;
-
-    // Excluir completamente los partidos del viernes 12 de junio de 2026
-    if (match.date === excludedDate) return;
-
-    const key = prediction.email || prediction.uid || "sin-correo";
-
-    if (!users[key]) {
-      users[key] = {
-        playerName: prediction.playerName || cleanNameFromEmail(key),
-        pts: 0,
-        exactos: 0,
-        ganadores: 0,
-        goles: 0
-      };
-    }
-
-    const result = results[prediction.matchId];
-
-    // Si el partido todavía no tiene resultado oficial, no suma
-    if (!result) return;
-
-    const score = scorePoints(prediction, result);
-
-    users[key].pts += score.points;
-
-    if (score.exact) {
-      users[key].exactos += 1;
-    }
-
-    if (score.winner) {
-      users[key].ganadores += 1;
-    }
-
-    users[key].goles += score.goals || 0;
-  });
-
-  const rows = Object.values(users).sort((a, b) =>
-    b.pts - a.pts ||
-    b.exactos - a.exactos ||
-    b.ganadores - a.ganadores ||
-    b.goles - a.goles ||
-    a.playerName.localeCompare(b.playerName)
-  );
+  const rows = await buildScores(null, true);
 
   if (rows.length === 0) {
     $("rankingOfficialTable").innerHTML = `
@@ -867,6 +1154,8 @@ async function renderOfficialRanking() {
           <th>#</th>
           <th>Jugador</th>
           <th>Puntos Oficiales</th>
+          <th>Grupos oficiales</th>
+          <th>16avos</th>
           <th>Exactos</th>
           <th>Ganadores</th>
           <th>Goles</th>
@@ -878,6 +1167,8 @@ async function renderOfficialRanking() {
             <td>${i + 1}</td>
             <td>${r.playerName}</td>
             <td>${r.pts}</td>
+            <td>${r.grupos}</td>
+            <td>${r.dieciseisavos}</td>
             <td>${r.exactos}</td>
             <td>${r.ganadores}</td>
             <td>${r.goles}</td>
@@ -903,6 +1194,8 @@ async function renderDaily() {
           <th>#</th>
           <th>Jugador</th>
           <th>Puntos del día</th>
+          <th>Grupos</th>
+          <th>16avos</th>
           <th>Exactos</th>
           <th>Ganadores</th>
           <th>Goles</th>
@@ -914,6 +1207,8 @@ async function renderDaily() {
             <td>${i + 1}</td>
             <td>${r.playerName}</td>
             <td>${r.pts}</td>
+            <td>${r.grupos}</td>
+            <td>${r.dieciseisavos}</td>
             <td>${r.exactos}</td>
             <td>${r.ganadores}</td>
             <td>${r.goles}</td>
@@ -931,6 +1226,10 @@ async function renderActiveTab() {
     await renderQuiniela();
   }
 
+  if (tabId === "dieciseisavos") {
+    await renderDieciseisavos();
+  }
+
   if (tabId === "resultados") {
     await renderResults();
   }
@@ -943,7 +1242,7 @@ async function renderActiveTab() {
     await renderRanking();
   }
 
-  if(tabId==="rankingOficial"){
+  if (tabId === "rankingOficial") {
     await renderOfficialRanking();
   }
 
@@ -1051,9 +1350,16 @@ onAuthStateChanged(auth, async (user) => {
   const userInfo = $("userInfo");
 
   resultsLoaded = false;
+  results16Loaded = false;
+
   userPredictionsLoaded = false;
+  userPredictions16Loaded = false;
+
   userPredictions = {};
+  userPredictions16 = {};
+
   allPredictionsCache = null;
+  allPredictions16Cache = null;
 
   if (user) {
     currentPlayerName = await loadUserProfile(user);
