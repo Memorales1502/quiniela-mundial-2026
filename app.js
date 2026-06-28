@@ -1342,6 +1342,28 @@ $("resetPasswordBtn").onclick = async () => {
 $("logoutBtn").onclick = () => signOut(auth);
 $("loadDaily").onclick = renderDaily;
 
+function showNoticeModal() {
+  const noticeModal = $("noticeModal");
+
+  if (noticeModal) {
+    noticeModal.style.display = "flex";
+  }
+}
+
+function hideNoticeModal() {
+  const noticeModal = $("noticeModal");
+
+  if (noticeModal) {
+    noticeModal.style.display = "none";
+  }
+}
+
+const closeNoticeBtn = $("closeNoticeBtn");
+
+if (closeNoticeBtn) {
+  closeNoticeBtn.onclick = hideNoticeModal;
+}
+
 onAuthStateChanged(auth, async (user) => {
   currentUser = user;
 
@@ -1376,6 +1398,8 @@ onAuthStateChanged(auth, async (user) => {
     if (loginBox) {
       loginBox.classList.add("hidden");
     }
+
+    showNoticeModal();
   } else {
     currentPlayerName = "";
 
@@ -1390,6 +1414,8 @@ onAuthStateChanged(auth, async (user) => {
     if (loginBox) {
       loginBox.classList.remove("hidden");
     }
+
+    hideNoticeModal();
   }
 
   await renderActiveTab();
