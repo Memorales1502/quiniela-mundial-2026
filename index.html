@@ -41,6 +41,7 @@
   <nav class="tabs">
     <button data-tab="reglas" class="active">Reglas</button>
     <button data-tab="quiniela">Mi quiniela</button>
+    <button data-tab="dieciseisavos">16avos</button>
     <button data-tab="resultados">Resultados</button>
     <button data-tab="diaria">Tabla diaria</button>
     <button data-tab="ranking">Puntaje Inicial</button>
@@ -64,14 +65,14 @@
       <div class="rules-text">
         <h3>REGLAS OFICIALES – QUINIELA MUNDIALISTA 2026</h3>
 
-        <p><strong>1.</strong> Cada participante deberá ingresar sus pronósticos antes de las 13:00 horas del día 12 de junio 2026, Una vez ingresados los posibles resultados y enviados en el sistema, ya no podrán ser modificados bajo ninguna circunstancia.</p>
+        <p><strong>1.</strong> Cada participante deberá ingresar sus pronósticos antes de la hora límite correspondiente a cada fase. Una vez ingresados los posibles resultados y enviados en el sistema, ya no podrán ser modificados bajo ninguna circunstancia.</p>
         <p><strong>2.</strong> Los marcadores válidos serán únicamente los correspondientes a los 90 minutos reglamentarios del juego.</p>
         <p><strong>3.</strong> No se tomarán en cuenta tiempos extras, tiempo suplementario ni tanda de penales.</p>
         <p><strong>4.</strong> Si el participante no ingresa algún marcador o deja incompleto el pronóstico de un partido, este se considerará inválido y no tendrá punteo alguno.</p>
 
         <p><strong>5.</strong> Sistema de puntuación:</p>
 
-        <p><strong>A. 🏆 Marcador exacto: 5 puntos</strong><br>Si aciertas exactamente el marcador final del partido (ejemplo: pronóstico 2–1 y resultado oficial 2–1), obtienes automáticamente los 5 puntos completos, ⚠️ Importante: Si obtienes marcador exacto, NO se suman puntos adicionales por goles o ganador.</p>
+        <p><strong>A. 🏆 Marcador exacto: 5 puntos</strong><br>Si aciertas exactamente el marcador final del partido (ejemplo: pronóstico 2–1 y resultado oficial 2–1), obtienes automáticamente los 5 puntos completos. ⚠️ Importante: Si obtienes marcador exacto, NO se suman puntos adicionales por goles o ganador.</p>
         <p><strong>B. ⚽ Goles del Equipo 1: 1 punto</strong><br>Si aciertas la cantidad exacta de goles anotados por el Equipo 1.</p>
         <p><strong>C. ⚽ Goles del Equipo 2: 1 punto</strong><br>Si aciertas la cantidad exacta de goles anotados por el Equipo 2.</p>
         <p><strong>D. 🏅 Ganador o empate: 1 punto</strong><br>Si aciertas correctamente el ganador del partido o si pronosticas empate y el resultado oficial también fue empate.</p>
@@ -101,9 +102,9 @@
     </section>
 
     <section id="quiniela" class="tab">
-      <h2>Mi quiniela</h2>
+      <h2>Mi quiniela - Fase de grupos</h2>
       <p class="note">
-        Llena todos tus marcadores y presiona una sola vez el botón de envío. Al enviar, tus pronósticos quedarán bloqueados y se descargará una constancia.
+        Llena todos tus marcadores de fase de grupos y presiona una sola vez el botón de envío. Al enviar, tus pronósticos quedarán bloqueados y se descargará una constancia.
       </p>
 
       <div id="matchesList" class="match-list"></div>
@@ -131,7 +132,43 @@
             letter-spacing:.04em;
           "
         >
-          ENVIAR TODOS MIS PRONÓSTICOS
+          ENVIAR PRONÓSTICOS FASE DE GRUPOS
+        </button>
+      </div>
+    </section>
+
+    <section id="dieciseisavos" class="tab">
+      <h2>16avos de Final</h2>
+      <p class="note">
+        Llena tus pronósticos de 16avos de final. Al enviar, quedarán bloqueados y se descargará una constancia independiente de esta fase.
+      </p>
+
+      <div id="matches16List" class="match-list"></div>
+
+      <div
+        id="submit16Area"
+        style="
+          display:flex;
+          justify-content:center;
+          align-items:center;
+          margin-top:40px;
+          margin-bottom:60px;
+          width:100%;
+        "
+      >
+        <button
+          id="submit16Btn"
+          style="
+            width:100%;
+            max-width:620px;
+            min-height:78px;
+            font-size:24px;
+            font-weight:800;
+            border-radius:18px;
+            letter-spacing:.04em;
+          "
+        >
+          ENVIAR PRONÓSTICOS 16AVOS
         </button>
       </div>
     </section>
@@ -163,7 +200,6 @@
       </p>
       
       <div id="rankingOfficialTable"></div>
-      
     </section>
 
     <section id="admin" class="tab">
