@@ -1154,7 +1154,7 @@ async function renderOfficialRanking() {
           <th>#</th>
           <th>Jugador</th>
           <th>Puntos Oficiales</th>
-          <th>Grupos oficiales</th>
+          <th>Puntos Fase de Grupos</th>
           <th>16avos</th>
           <th>Exactos</th>
           <th>Ganadores</th>
