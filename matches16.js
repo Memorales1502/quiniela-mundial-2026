@@ -65,7 +65,7 @@ export const MATCHES16 = [
   {
     id: "R32-008",
     date: "2026-07-01",
-    time: "16:00",
+    time: "10:00",
     group: "16avos",
     home: "Inglaterra",
     away: "RD Congo",
@@ -74,7 +74,7 @@ export const MATCHES16 = [
   {
     id: "R32-009",
     date: "2026-07-02",
-    time: "13:00",
+    time: "18:00",
     group: "16avos",
     home: "Estados Unidos",
     away: "Bosnia y Herzegovina",
@@ -83,7 +83,7 @@ export const MATCHES16 = [
   {
     id: "R32-010",
     date: "2026-07-02",
-    time: "16:00",
+    time: "14:00",
     group: "16avos",
     home: "Bélgica",
     away: "Senegal",
@@ -92,7 +92,7 @@ export const MATCHES16 = [
   {
     id: "R32-011",
     date: "2026-07-03",
-    time: "13:00",
+    time: "17:00",
     group: "16avos",
     home: "Portugal",
     away: "Croacia",
@@ -110,7 +110,7 @@ export const MATCHES16 = [
   {
     id: "R32-013",
     date: "2026-07-03",
-    time: "19:00",
+    time: "13:00",
     group: "16avos",
     home: "España",
     away: "Austria",
@@ -119,7 +119,7 @@ export const MATCHES16 = [
   {
     id: "R32-014",
     date: "2026-07-04",
-    time: "13:00",
+    time: "21:00",
     group: "16avos",
     home: "Suiza",
     away: "Argelia",
@@ -128,7 +128,7 @@ export const MATCHES16 = [
   {
     id: "R32-015",
     date: "2026-07-04",
-    time: "16:00",
+    time: "19:30",
     group: "16avos",
     home: "Colombia",
     away: "Ghana",
@@ -137,7 +137,7 @@ export const MATCHES16 = [
   {
     id: "R32-016",
     date: "2026-07-04",
-    time: "19:00",
+    time: "12:00",
     group: "16avos",
     home: "Australia",
     away: "Egipto",
