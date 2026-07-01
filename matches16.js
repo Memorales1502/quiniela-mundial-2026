@@ -55,7 +55,7 @@ export const MATCHES16 = [
   },
   {
     id: "R32-007",
-    date: "2026-07-01",
+    date: "2026-06-30",
     time: "13:00",
     group: "16avos",
     home: "México",
