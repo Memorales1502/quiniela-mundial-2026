@@ -34,22 +34,21 @@
 
       <h2>Aviso Importante</h2>
 
-      <h3>16avos de Final habilitados</h3>
+      <h3>Octavos de Final habilitados</h3>
 
       <p>
-        Ya puedes ingresar tus pronósticos correspondientes a los
-        <strong>16avos de Final</strong> de la Quiniela Mundialista 2026.
+        Los pronósticos de <strong>Octavos de Final</strong> se enviarán
+        individualmente por partido antes de que inicie cada encuentro.
       </p>
 
       <div class="notice-date">
-        <strong>Fecha límite para enviar pronósticos:</strong><br>
-        Domingo 28 de junio de 2026<br>
-        <strong>Antes de las 13:00 horas</strong>
+        <strong>Importante:</strong><br>
+        Cada partido se bloqueará automáticamente al llegar su hora de inicio.
       </div>
 
       <div class="notice-payment">
         <strong>Recordatorio de cuota de participación</strong><br>
-        Si aún tienes pendiente el pago de la cuota de participación, te agradecemos realizarlo a la mayor brevedad posible para mantener activa tu participación en la quiniela.
+        Si aún tienes pendiente el pago de la cuota de participación, te agradecemos realizarlo a la mayor brevedad posible.
       </div>
 
       <button id="closeNoticeBtn">ENTENDIDO</button>
@@ -70,6 +69,7 @@
     <button data-tab="reglas" class="active">Reglas</button>
     <button data-tab="quiniela">Mi quiniela</button>
     <button data-tab="dieciseisavos">16avos</button>
+    <button data-tab="octavos">Octavos</button>
     <button data-tab="resultados">Resultados</button>
     <button data-tab="diaria">Tabla diaria</button>
     <button data-tab="ranking">Puntaje Inicial</button>
@@ -93,7 +93,7 @@
       <div class="rules-text">
         <h3>REGLAS OFICIALES – QUINIELA MUNDIALISTA 2026</h3>
 
-        <p><strong>1.</strong> Cada participante deberá ingresar sus pronósticos antes de la hora límite correspondiente a cada fase. Una vez ingresados los posibles resultados y enviados en el sistema, ya no podrán ser modificados bajo ninguna circunstancia.</p>
+        <p><strong>1.</strong> Cada participante deberá ingresar sus pronósticos antes de la hora límite correspondiente a cada partido o fase. Una vez enviados, ya no podrán ser modificados.</p>
         <p><strong>2.</strong> Los marcadores válidos serán únicamente los correspondientes a los 90 minutos reglamentarios del juego.</p>
         <p><strong>3.</strong> No se tomarán en cuenta tiempos extras, tiempo suplementario ni tanda de penales.</p>
         <p><strong>4.</strong> Si el participante no ingresa algún marcador o deja incompleto el pronóstico de un partido, este se considerará inválido y no tendrá punteo alguno.</p>
@@ -109,32 +109,12 @@
         <p><strong>7.</strong> Si el participante acierta el marcador exacto, se otorgarán únicamente 5 puntos en total.</p>
         <p><strong>8.</strong> Si el participante no acierta el marcador exacto, podrá sumar puntos parciales por goles acertados y/o ganador acertado.</p>
         <p><strong>9.</strong> El ranking general se actualizará conforme se registren los resultados oficiales al terminar cada partido por el administrador.</p>
-
-        <p><strong>10.</strong> Ejemplos de puntuación:</p>
-        <ol type="a">
-          <li>Pronóstico 2–1 - Resultado oficial 2–1 = 5 pts.</li>
-          <li>Pronóstico 2–0 - Resultado oficial 2–1 = 2 pts.</li>
-          <li>Pronóstico 1–1 - Resultado oficial 2–2 = 1 pt.</li>
-          <li>Pronóstico 0–1 - Resultado oficial 2–1 = 1 pt.</li>
-          <li>Pronóstico 3–0 - Resultado oficial 1–2 = 0 pts.</li>
-        </ol>
-        
-        <p><strong>11.</strong> En caso de empate en puntos dentro del ranking, se aplicarán los siguientes criterios de desempate:</p>
-        <ol type="a">
-          <li>Mayor cantidad de marcadores exactos.</li>
-          <li>Mayor cantidad de ganadores acertados.</li>
-          <li>Mayor cantidad de goles acertados.</li>
-          <li>Si persiste el empate, el método de desempate será por la dinámica definida por los participantes.</li>
-        </ol>
       </div>
     </section>
 
     <section id="quiniela" class="tab">
       <h2>Mi quiniela - Fase de grupos</h2>
-      <p class="note">
-        Llena todos tus marcadores de fase de grupos y presiona una sola vez el botón de envío.
-      </p>
-
+      <p class="note">Llena todos tus marcadores de fase de grupos y presiona una sola vez el botón de envío.</p>
       <div id="matchesList" class="match-list"></div>
 
       <div id="submitArea" style="display:flex;justify-content:center;align-items:center;margin-top:40px;margin-bottom:60px;width:100%;">
@@ -146,10 +126,7 @@
 
     <section id="dieciseisavos" class="tab">
       <h2>16avos de Final</h2>
-      <p class="note">
-        Llena tus pronósticos de 16avos de final. Al enviar, quedarán bloqueados y se descargará una constancia independiente de esta fase.
-      </p>
-
+      <p class="note">Llena tus pronósticos de 16avos de final. Al enviar, quedarán bloqueados.</p>
       <div id="matches16List" class="match-list"></div>
 
       <div id="submit16Area" style="display:flex;justify-content:center;align-items:center;margin-top:40px;margin-bottom:60px;width:100%;">
@@ -157,6 +134,15 @@
           ENVIAR PRONÓSTICOS 16AVOS
         </button>
       </div>
+    </section>
+
+    <section id="octavos" class="tab">
+      <h2>Octavos de Final</h2>
+      <p class="note">
+        En esta fase puedes enviar tu pronóstico por partido. Cada encuentro se bloqueará automáticamente al llegar su hora de inicio.
+      </p>
+
+      <div id="matches8List" class="match-list"></div>
     </section>
 
     <section id="resultados" class="tab">
@@ -178,12 +164,10 @@
 
     <section id="rankingOficial" class="tab">
       <h2>Ranking Final</h2>
-
       <p class="note">
         Este Ranking Oficial inicia a partir del sábado 13 de junio de 2026.
         Los puntos obtenidos el viernes 12 de junio de 2026 no serán considerados.
       </p>
-      
       <div id="rankingOfficialTable"></div>
     </section>
 
