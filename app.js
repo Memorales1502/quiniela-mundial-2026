@@ -150,12 +150,32 @@ const scorePoints = (prediction, result) => {
 };
 
 const isLockedForInput = (match, prediction, phase = "groups") => {
-  const resultExists = phase === "16" ? hasResult16(match.id) : hasResult(match.id);
+
+  let resultExists = false;
+
+  switch (phase) {
+
+    case "16":
+      resultExists = hasResult16(match.id);
+      break;
+
+    case "8":
+      resultExists =
+        results8[match.id]?.homeScore !== undefined &&
+        results8[match.id]?.awayScore !== undefined;
+      break;
+
+    default:
+      resultExists = hasResult(match.id);
+      break;
+
+  }
 
   return Boolean(prediction?.submitted) ||
-    Boolean(prediction?.locked) ||
-    resultExists ||
-    isStarted(match);
+         Boolean(prediction?.locked) ||
+         resultExists ||
+         isStarted(match);
+
 };
 
 async function loadUserProfile(user) {
@@ -261,6 +281,19 @@ async function loadUserPredictions16(force = false) {
 
   userPredictions16Loaded = true;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 async function loadUserPredictions8(force = false) {
 
@@ -612,6 +645,84 @@ async function saveAllPredictions16() {
   await renderActiveTab();
 }
 
+async function savePrediction8(match) {
+
+  if (!currentUser) {
+    alert("Debes iniciar sesión.");
+    return;
+  }
+
+  await ensureResults8Loaded();
+  await loadUserPredictions8();
+
+  const existing = userPredictions8[match.id];
+
+  if (existing?.submitted) {
+    alert("Este pronóstico ya fue enviado.");
+    return;
+  }
+
+  if (results8[match.id] || isStarted(match)) {
+    alert("Este partido ya está bloqueado.");
+    return;
+  }
+
+  const h = $(`p8h_${match.id}`)?.value ?? "";
+  const a = $(`p8a_${match.id}`)?.value ?? "";
+
+  const incomplete = h === "" || a === "";
+
+  if (!confirm(`¿Enviar pronóstico para ${match.home} vs ${match.away}?\n\nUna vez enviado ya no podrá modificarse.`))
+    return;
+
+  const data = {
+
+    uid: currentUser.uid,
+    email: currentUser.email,
+    playerName: getDisplayName(currentUser),
+
+    phase: "octavos",
+
+    matchId: match.id,
+
+    homeScore: incomplete ? null : Number(h),
+    awayScore: incomplete ? null : Number(a),
+
+    invalid: incomplete,
+
+    submitted: true,
+    locked: true,
+
+    submittedAt: serverTimestamp()
+
+  };
+
+  await setDoc(
+    doc(db, "predictions8", `${currentUser.uid}_${match.id}`),
+    data
+  );
+
+  userPredictions8[match.id] = data;
+
+  allPredictions8Cache = null;
+
+  alert("Pronóstico enviado correctamente.");
+
+  await renderOctavos();
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
 async function saveResult(match) {
   if (!ADMIN_EMAILS.includes(currentUser?.email)) {
     alert("No tienes permiso de administrador.");
@@ -686,13 +797,60 @@ async function saveResult16(match) {
   await renderActiveTab();
 }
 
+async function saveResult8(match) {
+  if (!ADMIN_EMAILS.includes(currentUser?.email)) {
+    alert("No tienes permiso de administrador.");
+    return;
+  }
+
+  const h = $(`r8h_${match.id}`).value;
+  const a = $(`r8a_${match.id}`).value;
+
+  if (h === "" || a === "") {
+    alert("Coloca el resultado final de los 90 minutos.");
+    return;
+  }
+
+  if (!confirm(`Guardar resultado oficial de Octavos: ${match.home} ${h}-${a} ${match.away}?`)) return;
+
+  await setDoc(doc(db, "results8", match.id), {
+    matchId: match.id,
+    homeScore: Number(h),
+    awayScore: Number(a),
+    updatedAt: serverTimestamp(),
+    admin: currentUser.email
+  });
+
+  results8[match.id] = {
+    matchId: match.id,
+    homeScore: Number(h),
+    awayScore: Number(a),
+    admin: currentUser.email
+  };
+
+  results8Loaded = true;
+  allPredictions8Cache = null;
+
+  await renderActiveTab();
+}
+
 function card(match, prediction, phase = "groups") {
+
   const is16 = phase === "16";
-  const result = is16 ? results16[match.id] : results[match.id];
+
+  const result = is16
+    ? results16[match.id]
+    : results[match.id];
+
   const locked = isLockedForInput(match, prediction, phase);
 
-  const inputHomeId = is16 ? `p16h_${match.id}` : `ph_${match.id}`;
-  const inputAwayId = is16 ? `p16a_${match.id}` : `pa_${match.id}`;
+  const inputHomeId = is16
+    ? `p16h_${match.id}`
+    : `ph_${match.id}`;
+
+  const inputAwayId = is16
+    ? `p16a_${match.id}`
+    : `pa_${match.id}`;
 
   const predictionText = prediction?.submitted
     ? prediction.invalid
@@ -712,92 +870,306 @@ function card(match, prediction, phase = "groups") {
 
   return `
     <article class="match-card">
+
       <div>
-        <div class="teams">${match.home} vs ${match.away}</div>
-        <div class="meta">${match.date} ${match.time || ""} · ${match.group || ""} · ${match.venue || ""}</div>
+
+        <div class="teams">
+          ${match.home} vs ${match.away}
+        </div>
+
+        <div class="meta">
+          ${match.date}
+          ${match.time || ""}
+          ·
+          ${match.group || ""}
+          ·
+          ${match.venue || ""}
+        </div>
+
         <div>${predictionText}</div>
+
       </div>
 
       <div>
-        ${result ? `Resultado 90': <b>${result.homeScore}-${result.awayScore}</b>` : "Resultado pendiente"}
+
+        ${
+          result
+            ? `Resultado 90': <b>${result.homeScore}-${result.awayScore}</b>`
+            : "Resultado pendiente"
+        }
+
         <br>
+
         ${lockText}
+
       </div>
 
       <div class="score-inputs">
-        <input id="${inputHomeId}" type="number" min="0" value="${prediction?.homeScore ?? ""}" ${locked ? "disabled" : ""}>
+
+        <input
+          id="${inputHomeId}"
+          type="number"
+          min="0"
+          value="${prediction?.homeScore ?? ""}"
+          ${locked ? "disabled" : ""}
+        >
+
         -
-        <input id="${inputAwayId}" type="number" min="0" value="${prediction?.awayScore ?? ""}" ${locked ? "disabled" : ""}>
+
+        <input
+          id="${inputAwayId}"
+          type="number"
+          min="0"
+          value="${prediction?.awayScore ?? ""}"
+          ${locked ? "disabled" : ""}
+        >
+
       </div>
+
     </article>
   `;
+
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 async function renderQuiniela() {
+
   if (!currentUser) {
-    $("matchesList").innerHTML = '<p class="note">Ingresa o regístrate para llenar tu quiniela.</p>';
+
+    $("matchesList").innerHTML =
+      '<p class="note">Ingresa o regístrate para llenar tu quiniela.</p>';
 
     const submitAllBtn = $("submitAllBtn");
-    if (submitAllBtn) submitAllBtn.style.display = "none";
+
+    if (submitAllBtn)
+      submitAllBtn.style.display = "none";
 
     return;
+
   }
 
-  $("matchesList").innerHTML = '<p class="note">Cargando partidos...</p>';
+  $("matchesList").innerHTML =
+    '<p class="note">Cargando partidos...</p>';
 
   await ensureResultsLoaded();
   await loadUserPredictions();
 
-  const html = MATCHES.map((match) => {
-    return card(match, userPredictions[match.id], "groups");
-  });
+  const html = MATCHES.map(match =>
+    card(match, userPredictions[match.id], "groups")
+  );
 
   $("matchesList").innerHTML = html.join("");
 
   const submitAllBtn = $("submitAllBtn");
 
   if (submitAllBtn) {
+
     submitAllBtn.style.display = "inline-block";
     submitAllBtn.onclick = saveAllPredictions;
+
   }
+
 }
 
+
+
 async function renderDieciseisavos() {
+
   if (!currentUser) {
-    $("matches16List").innerHTML = '<p class="note">Ingresa o regístrate para llenar tus pronósticos de 16avos.</p>';
+
+    $("matches16List").innerHTML =
+      '<p class="note">Ingresa o regístrate para llenar tus pronósticos de 16avos.</p>';
 
     const submit16Btn = $("submit16Btn");
-    if (submit16Btn) submit16Btn.style.display = "none";
+
+    if (submit16Btn)
+      submit16Btn.style.display = "none";
 
     return;
+
   }
 
-  $("matches16List").innerHTML = '<p class="note">Cargando partidos de 16avos...</p>';
+  $("matches16List").innerHTML =
+    '<p class="note">Cargando partidos de 16avos...</p>';
 
   await ensureResults16Loaded();
   await loadUserPredictions16();
 
-  const html = MATCHES16.map((match) => {
-    return card(match, userPredictions16[match.id], "16");
-  });
+  const html = MATCHES16.map(match =>
+    card(match, userPredictions16[match.id], "16")
+  );
 
   $("matches16List").innerHTML = html.join("");
 
   const submit16Btn = $("submit16Btn");
 
   if (submit16Btn) {
+
     submit16Btn.style.display = "inline-block";
     submit16Btn.onclick = saveAllPredictions16;
+
   }
+
 }
 
+
+
+async function renderOctavos() {
+
+  if (!currentUser) {
+
+    $("matches8List").innerHTML =
+      '<p class="note">Ingresa o regístrate para llenar tus pronósticos de Octavos.</p>';
+
+    return;
+
+  }
+
+  $("matches8List").innerHTML =
+    '<p class="note">Cargando partidos de Octavos...</p>';
+
+  await ensureResults8Loaded();
+  await loadUserPredictions8();
+
+  let html = "";
+
+  for (const match of MATCHES8) {
+
+    const prediction = userPredictions8[match.id];
+
+    const result = results8[match.id];
+
+    const locked =
+      prediction?.submitted ||
+      result ||
+      isStarted(match);
+
+    html += `
+
+      <article class="match-card">
+
+        <div>
+
+          <div class="teams">
+
+            ${match.home} vs ${match.away}
+
+          </div>
+
+          <div class="meta">
+
+            ${match.date}
+            ${match.time}
+            ·
+            ${match.venue}
+
+          </div>
+
+          <div>
+
+            ${
+              prediction?.submitted
+              ? `<span class="ok">Enviado: ${prediction.homeScore}-${prediction.awayScore}</span>`
+              : '<span class="note">Pendiente de enviar</span>'
+            }
+
+          </div>
+
+        </div>
+
+        <div>
+
+          ${
+            result
+              ? `Resultado 90': <b>${result.homeScore}-${result.awayScore}</b>`
+              : "Resultado pendiente"
+          }
+
+        </div>
+
+        <div class="score-inputs">
+
+          <input
+            id="p8h_${match.id}"
+            type="number"
+            min="0"
+            value="${prediction?.homeScore ?? ""}"
+            ${locked ? "disabled" : ""}
+          >
+
+          -
+
+          <input
+            id="p8a_${match.id}"
+            type="number"
+            min="0"
+            value="${prediction?.awayScore ?? ""}"
+            ${locked ? "disabled" : ""}
+          >
+
+          <button
+            id="btn8_${match.id}"
+            ${locked ? "disabled" : ""}
+          >
+
+            ${locked ? "ENVIADO" : "ENVIAR"}
+
+          </button>
+
+        </div>
+
+      </article>
+
+    `;
+
+  }
+
+  $("matches8List").innerHTML = html;
+
+  for (const match of MATCHES8) {
+
+    const btn = $(`btn8_${match.id}`);
+
+    if (btn) {
+
+      btn.onclick = () => {
+
+        savePrediction8(match);
+
+      };
+
+    }
+
+  }
+
+}
+
+
+
 async function renderResults() {
-  $("resultsList").innerHTML = '<p class="note">Cargando resultados...</p>';
+
+  $("resultsList").innerHTML =
+    '<p class="note">Cargando resultados...</p>';
 
   await ensureResultsLoaded();
   await ensureResults16Loaded();
+  await ensureResults8Loaded();
 
-  const groupResults = MATCHES.map((match) => {
+  const groupResults = MATCHES.map(match => {
+
     const result = results[match.id];
 
     return `
@@ -809,9 +1181,13 @@ async function renderResults() {
         <div>${result ? `Final 90': <b>${result.homeScore}-${result.awayScore}</b>` : "Pendiente"}</div>
       </article>
     `;
+
   }).join("");
 
-  const round16Results = MATCHES16.map((match) => {
+
+
+  const round16Results = MATCHES16.map(match => {
+
     const result = results16[match.id];
 
     return `
@@ -823,22 +1199,66 @@ async function renderResults() {
         <div>${result ? `Final 90': <b>${result.homeScore}-${result.awayScore}</b>` : "Pendiente"}</div>
       </article>
     `;
+
   }).join("");
 
+
+
+  const round8Results = MATCHES8.map(match => {
+
+    const result = results8[match.id];
+
+    return `
+      <article class="match-card">
+        <div>
+          <div class="teams">${match.home} vs ${match.away}</div>
+          <div class="meta">${match.date} ${match.time || ""} · Octavos</div>
+        </div>
+        <div>${result ? `Final 90': <b>${result.homeScore}-${result.awayScore}</b>` : "Pendiente"}</div>
+      </article>
+    `;
+
+  }).join("");
+
+
+
   $("resultsList").innerHTML = `
+
     <div class="rules-text">
       <h3>Fase de grupos</h3>
     </div>
+
     ${groupResults}
 
     <div class="rules-text" style="margin-top:24px;">
       <h3>16avos de Final</h3>
     </div>
+
     ${round16Results}
+
+    <div class="rules-text" style="margin-top:24px;">
+      <h3>Octavos de Final</h3>
+    </div>
+
+    ${round8Results}
+
   `;
+
 }
 
+
+
+
+
+
+
+
+
+
+
+
 async function downloadPlayerPredictionsCSV(playerKey) {
+
   if (!ADMIN_EMAILS.includes(currentUser?.email)) {
     alert("No tienes permiso de administrador.");
     return;
@@ -846,9 +1266,11 @@ async function downloadPlayerPredictionsCSV(playerKey) {
 
   await ensureResultsLoaded();
   await ensureResults16Loaded();
+  await ensureResults8Loaded();
 
   const predictionsGroups = await loadAllPredictions();
   const predictions16 = await loadAllPredictions16();
+  const predictions8 = await loadAllPredictions8();
 
   const rows = [];
 
@@ -879,19 +1301,27 @@ async function downloadPlayerPredictionsCSV(playerKey) {
   ]);
 
   const addRows = (predictions, matches, phaseName, resultMap) => {
+
     predictions.forEach((prediction) => {
+
       const key = prediction.email || prediction.uid || "sin-correo";
 
       if (key !== playerKey) return;
 
-      const match = matches.find((m) => m.id === prediction.matchId);
+      const match = matches.find(m => m.id === prediction.matchId);
+
       if (!match) return;
 
       const result = resultMap[prediction.matchId];
+
       const score = scorePoints(prediction, result);
 
-      playerName = prediction.playerName || cleanNameFromEmail(prediction.email);
-      playerEmail = prediction.email || "";
+      playerName =
+        prediction.playerName ||
+        cleanNameFromEmail(prediction.email);
+
+      playerEmail =
+        prediction.email || "";
 
       rows.push([
         playerName,
@@ -906,70 +1336,133 @@ async function downloadPlayerPredictionsCSV(playerKey) {
         match.away,
         prediction.invalid ? "" : prediction.awayScore,
         match.venue || "",
-        prediction.invalid ? "INVÁLIDO - 0 PUNTOS" : "ENVIADO",
-        result ? `${result.homeScore}-${result.awayScore}` : "PENDIENTE",
+        prediction.invalid
+          ? "INVÁLIDO - 0 PUNTOS"
+          : "ENVIADO",
+        result
+          ? `${result.homeScore}-${result.awayScore}`
+          : "PENDIENTE",
         score.points
       ]);
+
     });
+
   };
 
-  addRows(predictionsGroups, MATCHES, "Fase de grupos", results);
-  addRows(predictions16, MATCHES16, "16avos", results16);
+  addRows(
+    predictionsGroups,
+    MATCHES,
+    "Fase de grupos",
+    results
+  );
+
+  addRows(
+    predictions16,
+    MATCHES16,
+    "16avos",
+    results16
+  );
+
+  addRows(
+    predictions8,
+    MATCHES8,
+    "Octavos",
+    results8
+  );
 
   if (rows.length <= 5) {
     alert("No se encontraron pronósticos para este jugador.");
     return;
   }
 
-  const safeName = (playerName || playerEmail || "jugador")
+  const safeName = (
+      playerName ||
+      playerEmail ||
+      "jugador"
+    )
     .toLowerCase()
     .replaceAll(" ", "_")
     .replaceAll("@", "_")
     .replaceAll(".", "_")
     .replaceAll("/", "_");
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today =
+    new Date().toISOString().slice(0,10);
 
-  downloadCSV(rows, `pronosticos_${safeName}_${today}.csv`);
+  downloadCSV(
+    rows,
+    `pronosticos_${safeName}_${today}.csv`
+  );
+
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 async function buildPlayerDownloadCards() {
+
   const predictionsGroups = await loadAllPredictions();
   const predictions16 = await loadAllPredictions16();
+  const predictions8 = await loadAllPredictions8();
 
   const players = {};
 
   const addPlayers = (predictions) => {
+
     predictions.forEach((prediction) => {
-      const key = prediction.email || prediction.uid || "sin-correo";
+
+      const key =
+        prediction.email ||
+        prediction.uid ||
+        "sin-correo";
 
       if (!players[key]) {
+
         players[key] = {
           key,
-          name: prediction.playerName || cleanNameFromEmail(prediction.email),
+          name:
+            prediction.playerName ||
+            cleanNameFromEmail(prediction.email),
           email: prediction.email || "",
           count: 0
         };
+
       }
 
       players[key].count += 1;
+
     });
+
   };
 
   addPlayers(predictionsGroups);
   addPlayers(predictions16);
+  addPlayers(predictions8);
 
   const list = Object.values(players).sort((a, b) =>
     a.name.localeCompare(b.name)
   );
 
   if (list.length === 0) {
+
     return `
       <div class="rules-text">
         <h3>Descargar pronósticos por jugador</h3>
         <p class="note">Aún no hay pronósticos enviados.</p>
       </div>
     `;
+
   }
 
   return `
@@ -980,8 +1473,10 @@ async function buildPlayerDownloadCards() {
       </p>
 
       <div class="match-list">
+
         ${list.map((player) => `
           <article class="match-card">
+
             <div>
               <div class="teams">${player.name}</div>
               <div class="meta">${player.email}</div>
@@ -997,65 +1492,171 @@ async function buildPlayerDownloadCards() {
                 Descargar CSV
               </button>
             </div>
+
           </article>
         `).join("")}
+
       </div>
     </div>
   `;
+
 }
 
+
+
+
+
+
 async function renderAdmin() {
+
   if (!ADMIN_EMAILS.includes(currentUser?.email)) {
-    $("adminList").innerHTML = '<p class="note">Ingresa con un correo administrador.</p>';
+    $("adminList").innerHTML =
+      '<p class="note">Ingresa con un correo administrador.</p>';
     return;
   }
 
-  $("adminList").innerHTML = '<p class="note">Cargando panel administrador...</p>';
+  $("adminList").innerHTML =
+    '<p class="note">Cargando panel administrador...</p>';
 
   await ensureResultsLoaded();
   await ensureResults16Loaded();
+  await ensureResults8Loaded();
 
   const playerDownloadsHtml = await buildPlayerDownloadCards();
 
   const resultsAdminHtml = MATCHES.map((match) => `
     <article class="match-card">
+
       <div>
         <div class="teams">${match.home} vs ${match.away}</div>
-        <div class="meta">${match.date} ${match.time || ""} · ${match.venue || ""}</div>
+        <div class="meta">
+          ${match.date}
+          ${match.time || ""}
+          ·
+          ${match.venue || ""}
+        </div>
       </div>
 
       <div class="score-inputs">
-        <input id="rh_${match.id}" type="number" min="0" value="${results[match.id]?.homeScore ?? ""}">
+        <input
+          id="rh_${match.id}"
+          type="number"
+          min="0"
+          value="${results[match.id]?.homeScore ?? ""}"
+        >
+
         -
-        <input id="ra_${match.id}" type="number" min="0" value="${results[match.id]?.awayScore ?? ""}">
-        <button data-result="${match.id}">Guardar resultado 90'</button>
+
+        <input
+          id="ra_${match.id}"
+          type="number"
+          min="0"
+          value="${results[match.id]?.awayScore ?? ""}"
+        >
+
+        <button data-result="${match.id}">
+          Guardar resultado
+        </button>
+
       </div>
+
     </article>
   `).join("");
+
+
 
   const results16AdminHtml = MATCHES16.map((match) => `
     <article class="match-card">
+
       <div>
         <div class="teams">${match.home} vs ${match.away}</div>
-        <div class="meta">${match.date} ${match.time || ""} · ${match.venue || ""}</div>
+        <div class="meta">
+          ${match.date}
+          ${match.time || ""}
+          ·
+          ${match.venue || ""}
+        </div>
       </div>
 
       <div class="score-inputs">
-        <input id="r16h_${match.id}" type="number" min="0" value="${results16[match.id]?.homeScore ?? ""}">
+
+        <input
+          id="r16h_${match.id}"
+          type="number"
+          min="0"
+          value="${results16[match.id]?.homeScore ?? ""}"
+        >
+
         -
-        <input id="r16a_${match.id}" type="number" min="0" value="${results16[match.id]?.awayScore ?? ""}">
-        <button data-result16="${match.id}">Guardar resultado 16avos</button>
+
+        <input
+          id="r16a_${match.id}"
+          type="number"
+          min="0"
+          value="${results16[match.id]?.awayScore ?? ""}"
+        >
+
+        <button data-result16="${match.id}">
+          Guardar resultado
+        </button>
+
       </div>
+
     </article>
   `).join("");
 
+
+
+  const results8AdminHtml = MATCHES8.map((match) => `
+    <article class="match-card">
+
+      <div>
+        <div class="teams">${match.home} vs ${match.away}</div>
+        <div class="meta">
+          ${match.date}
+          ${match.time || ""}
+          ·
+          ${match.venue || ""}
+        </div>
+      </div>
+
+      <div class="score-inputs">
+
+        <input
+          id="r8h_${match.id}"
+          type="number"
+          min="0"
+          value="${results8[match.id]?.homeScore ?? ""}"
+        >
+
+        -
+
+        <input
+          id="r8a_${match.id}"
+          type="number"
+          min="0"
+          value="${results8[match.id]?.awayScore ?? ""}"
+        >
+
+        <button data-result8="${match.id}">
+          Guardar resultado
+        </button>
+
+      </div>
+
+    </article>
+  `).join("");
+
+
+
   $("adminList").innerHTML = `
+
     ${playerDownloadsHtml}
 
     <div class="rules-text" style="margin-top:24px;">
       <h3>Registrar resultados oficiales - Fase de grupos</h3>
       <p class="note">
-        Ingresa los resultados oficiales de 90 minutos para calcular el ranking.
+        Ingresa los resultados oficiales de los 90 minutos.
       </p>
     </div>
 
@@ -1063,151 +1664,352 @@ async function renderAdmin() {
       ${resultsAdminHtml}
     </div>
 
+
+
     <div class="rules-text" style="margin-top:24px;">
       <h3>Registrar resultados oficiales - 16avos</h3>
       <p class="note">
-        Ingresa los resultados oficiales de 90 minutos de 16avos para que se sumen al ranking.
+        Ingresa los resultados oficiales de los 90 minutos.
       </p>
     </div>
 
     <div class="match-list">
       ${results16AdminHtml}
     </div>
+
+
+
+    <div class="rules-text" style="margin-top:24px;">
+      <h3>Registrar resultados oficiales - Octavos</h3>
+      <p class="note">
+        Ingresa los resultados oficiales de los 90 minutos.
+      </p>
+    </div>
+
+    <div class="match-list">
+      ${results8AdminHtml}
+    </div>
+
   `;
 
+
+
   document.querySelectorAll("[data-download-player]").forEach((btn) => {
+
     btn.addEventListener("click", () => {
-      downloadPlayerPredictionsCSV(btn.dataset.downloadPlayer);
+
+      downloadPlayerPredictionsCSV(
+        btn.dataset.downloadPlayer
+      );
+
     });
+
   });
+
+
 
   MATCHES.forEach((match) => {
-    document.querySelector(`[data-result="${match.id}"]`)?.addEventListener("click", () => saveResult(match));
+
+    document
+      .querySelector(`[data-result="${match.id}"]`)
+      ?.addEventListener("click", () => saveResult(match));
+
   });
+
+
 
   MATCHES16.forEach((match) => {
-    document.querySelector(`[data-result16="${match.id}"]`)?.addEventListener("click", () => saveResult16(match));
+
+    document
+      .querySelector(`[data-result16="${match.id}"]`)
+      ?.addEventListener("click", () => saveResult16(match));
+
   });
+
+
+
+  MATCHES8.forEach((match) => {
+
+    document
+      .querySelector(`[data-result8="${match.id}"]`)
+      ?.addEventListener("click", () => saveResult8(match));
+
+  });
+
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 async function buildScores(dateFilter = null, officialOnly = false) {
+
   await ensureResultsLoaded();
   await ensureResults16Loaded();
+  await ensureResults8Loaded();
 
   const predictionsGroups = await loadAllPredictions();
   const predictions16 = await loadAllPredictions16();
+  const predictions8 = await loadAllPredictions8();
 
   const users = {};
+
   const excludedDate = "2026-06-12";
 
   const addScore = (prediction, match, result, phaseName) => {
+
     if (!match) return;
 
-    if (officialOnly && phaseName === "Fase de grupos" && match.date === excludedDate) {
+    if (
+      officialOnly &&
+      phaseName === "Fase de grupos" &&
+      match.date === excludedDate
+    ) {
       return;
     }
 
-    if (dateFilter && match.date !== dateFilter) return;
+    if (dateFilter && match.date !== dateFilter)
+      return;
 
-    const playerKey = prediction.email || prediction.uid || "sin-correo";
+    const playerKey =
+      prediction.email ||
+      prediction.uid ||
+      "sin-correo";
 
     users[playerKey] ??= {
+
       email: playerKey,
-      playerName: prediction.playerName || cleanNameFromEmail(playerKey),
+
+      playerName:
+        prediction.playerName ||
+        cleanNameFromEmail(playerKey),
+
       pts: 0,
+
       exactos: 0,
+
       ganadores: 0,
+
       goles: 0,
+
       grupos: 0,
-      dieciseisavos: 0
+
+      dieciseisavos: 0,
+
+      octavos: 0
+
     };
 
     const score = scorePoints(prediction, result);
 
     users[playerKey].pts += score.points;
 
-    if (phaseName === "Fase de grupos") {
-      users[playerKey].grupos += score.points;
+    switch (phaseName) {
+
+      case "Fase de grupos":
+        users[playerKey].grupos += score.points;
+        break;
+
+      case "16avos":
+        users[playerKey].dieciseisavos += score.points;
+        break;
+
+      case "Octavos":
+        users[playerKey].octavos += score.points;
+        break;
+
     }
 
-    if (phaseName === "16avos") {
-      users[playerKey].dieciseisavos += score.points;
-    }
+    if (score.exact)
+      users[playerKey].exactos++;
 
-    if (score.exact) {
-      users[playerKey].exactos += 1;
-    }
-
-    if (score.winner) {
-      users[playerKey].ganadores += 1;
-    }
+    if (score.winner)
+      users[playerKey].ganadores++;
 
     users[playerKey].goles += score.goals || 0;
+
   };
 
+
+
   predictionsGroups.forEach((prediction) => {
-    const match = MATCHES.find((item) => item.id === prediction.matchId);
-    addScore(prediction, match, results[prediction.matchId], "Fase de grupos");
+
+    const match =
+      MATCHES.find(
+        item => item.id === prediction.matchId
+      );
+
+    addScore(
+      prediction,
+      match,
+      results[prediction.matchId],
+      "Fase de grupos"
+    );
+
   });
+
+
 
   predictions16.forEach((prediction) => {
-    const match = MATCHES16.find((item) => item.id === prediction.matchId);
-    addScore(prediction, match, results16[prediction.matchId], "16avos");
+
+    const match =
+      MATCHES16.find(
+        item => item.id === prediction.matchId
+      );
+
+    addScore(
+      prediction,
+      match,
+      results16[prediction.matchId],
+      "16avos"
+    );
+
   });
 
+
+
+  predictions8.forEach((prediction) => {
+
+    const match =
+      MATCHES8.find(
+        item => item.id === prediction.matchId
+      );
+
+    addScore(
+      prediction,
+      match,
+      results8[prediction.matchId],
+      "Octavos"
+    );
+
+  });
+
+
+
   return Object.values(users).sort((a, b) =>
-    b.pts - a.pts ||
-    b.exactos - a.exactos ||
-    b.ganadores - a.ganadores ||
-    b.goles - a.goles ||
-    a.playerName.localeCompare(b.playerName)
+
+      b.pts - a.pts ||
+
+      b.exactos - a.exactos ||
+
+      b.ganadores - a.ganadores ||
+
+      b.goles - a.goles ||
+
+      a.playerName.localeCompare(b.playerName)
+
   );
+
 }
 
+
+
 async function renderRanking() {
-  $("rankingTable").innerHTML = '<p class="note">Cargando ranking...</p>';
+
+  $("rankingTable").innerHTML =
+    '<p class="note">Cargando ranking...</p>';
 
   const rows = await buildScores();
 
   $("rankingTable").innerHTML = `
+
     <table>
+
       <thead>
+
         <tr>
+
           <th>#</th>
+
           <th>Jugador</th>
+
           <th>Total</th>
+
           <th>Grupos</th>
+
           <th>16avos</th>
+
+          <th>Octavos</th>
+
           <th>Exactos</th>
+
           <th>Ganadores</th>
+
           <th>Goles</th>
+
         </tr>
+
       </thead>
+
       <tbody>
-        ${rows.map((r, i) => `
+
+        ${rows.map((r,i)=>`
+
           <tr>
-            <td>${i + 1}</td>
+
+            <td>${i+1}</td>
+
             <td>${r.playerName}</td>
+
             <td>${r.pts}</td>
+
             <td>${r.grupos}</td>
+
             <td>${r.dieciseisavos}</td>
+
+            <td>${r.octavos}</td>
+
             <td>${r.exactos}</td>
+
             <td>${r.ganadores}</td>
+
             <td>${r.goles}</td>
+
           </tr>
+
         `).join("")}
+
       </tbody>
+
     </table>
+
   `;
+
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
 async function renderOfficialRanking() {
+
   $("rankingOfficialTable").innerHTML =
     '<p class="note">Calculando ranking oficial...</p>';
 
   const rows = await buildScores(null, true);
 
   if (rows.length === 0) {
+
     $("rankingOfficialTable").innerHTML = `
       <div class="rules-text">
         <p class="note">
@@ -1215,82 +2017,171 @@ async function renderOfficialRanking() {
         </p>
       </div>
     `;
+
     return;
+
   }
 
   $("rankingOfficialTable").innerHTML = `
+
     <table>
+
       <thead>
+
         <tr>
+
           <th>#</th>
+
           <th>Jugador</th>
+
           <th>Puntos Oficiales</th>
-          <th>Puntos Fase de Grupos</th>
+
+          <th>Grupos</th>
+
           <th>16avos</th>
+
+          <th>Octavos</th>
+
           <th>Exactos</th>
+
           <th>Ganadores</th>
+
           <th>Goles</th>
+
         </tr>
+
       </thead>
+
       <tbody>
-        ${rows.map((r, i) => `
+
+        ${rows.map((r,i)=>`
+
           <tr>
-            <td>${i + 1}</td>
+
+            <td>${i+1}</td>
+
             <td>${r.playerName}</td>
+
             <td>${r.pts}</td>
+
             <td>${r.grupos}</td>
+
             <td>${r.dieciseisavos}</td>
+
+            <td>${r.octavos}</td>
+
             <td>${r.exactos}</td>
+
             <td>${r.ganadores}</td>
+
             <td>${r.goles}</td>
+
           </tr>
+
         `).join("")}
+
       </tbody>
+
     </table>
+
   `;
+
 }
 
+
+
 async function renderDaily() {
-  const date = $("dailyDate").value || new Date().toISOString().slice(0, 10);
+
+  const date =
+    $("dailyDate").value ||
+    new Date().toISOString().slice(0,10);
+
   $("dailyDate").value = date;
 
-  $("dailyTable").innerHTML = '<p class="note">Cargando tabla diaria...</p>';
+  $("dailyTable").innerHTML =
+    '<p class="note">Cargando tabla diaria...</p>';
 
   const rows = await buildScores(date);
 
   $("dailyTable").innerHTML = `
+
     <table>
+
       <thead>
+
         <tr>
+
           <th>#</th>
+
           <th>Jugador</th>
+
           <th>Puntos del día</th>
+
           <th>Grupos</th>
+
           <th>16avos</th>
+
+          <th>Octavos</th>
+
           <th>Exactos</th>
+
           <th>Ganadores</th>
+
           <th>Goles</th>
+
         </tr>
+
       </thead>
+
       <tbody>
-        ${rows.map((r, i) => `
+
+        ${rows.map((r,i)=>`
+
           <tr>
-            <td>${i + 1}</td>
+
+            <td>${i+1}</td>
+
             <td>${r.playerName}</td>
+
             <td>${r.pts}</td>
+
             <td>${r.grupos}</td>
+
             <td>${r.dieciseisavos}</td>
+
+            <td>${r.octavos}</td>
+
             <td>${r.exactos}</td>
+
             <td>${r.ganadores}</td>
+
             <td>${r.goles}</td>
+
           </tr>
+
         `).join("")}
+
       </tbody>
+
     </table>
+
   `;
+
 }
 
+
+
+
+
+
+
+
+
+
+
+
 async function renderActiveTab() {
+
   const tabId = getCurrentTabId();
 
   if (tabId === "quiniela") {
@@ -1299,6 +2190,10 @@ async function renderActiveTab() {
 
   if (tabId === "dieciseisavos") {
     await renderDieciseisavos();
+  }
+
+  if (tabId === "octavos") {
+    await renderOctavos();
   }
 
   if (tabId === "resultados") {
@@ -1320,20 +2215,29 @@ async function renderActiveTab() {
   if (tabId === "diaria") {
     await renderDaily();
   }
+
 }
 
 document.querySelectorAll(".tabs button").forEach((btn) => {
+
   btn.addEventListener("click", async () => {
-    document.querySelectorAll(".tabs button, .tab").forEach((x) => x.classList.remove("active"));
+
+    document
+      .querySelectorAll(".tabs button, .tab")
+      .forEach((x) => x.classList.remove("active"));
 
     btn.classList.add("active");
+
     $(btn.dataset.tab).classList.add("active");
 
     await renderActiveTab();
+
   });
+
 });
 
 $("loginBtn").onclick = async () => {
+
   const email = $("email").value.trim();
   const password = $("password").value;
 
@@ -1343,13 +2247,25 @@ $("loginBtn").onclick = async () => {
   }
 
   try {
-    await signInWithEmailAndPassword(auth, email, password);
+
+    await signInWithEmailAndPassword(
+      auth,
+      email,
+      password
+    );
+
   } catch (error) {
-    alert("No se pudo iniciar sesión. Verifica tu correo y contraseña.");
+
+    alert(
+      "No se pudo iniciar sesión. Verifica tu correo y contraseña."
+    );
+
   }
+
 };
 
 $("registerBtn").onclick = async () => {
+
   const displayName = $("displayName").value.trim();
   const email = $("email").value.trim();
   const password = $("password").value;
@@ -1370,31 +2286,55 @@ $("registerBtn").onclick = async () => {
   }
 
   try {
-    const cred = await createUserWithEmailAndPassword(auth, email, password);
+
+    const cred =
+      await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
 
     await updateProfile(cred.user, {
       displayName
     });
 
-    await setDoc(doc(db, "users", cred.user.uid), {
-      name: displayName,
-      email,
-      createdAt: serverTimestamp()
-    });
+    await setDoc(
+      doc(db, "users", cred.user.uid),
+      {
+        name: displayName,
+        email,
+        createdAt: serverTimestamp()
+      }
+    );
 
     currentPlayerName = displayName;
 
-    alert("Cuenta creada correctamente. Ya puedes participar en la quiniela.");
+    alert(
+      "Cuenta creada correctamente. Ya puedes participar en la quiniela."
+    );
+
   } catch (error) {
+
     if (error.code === "auth/email-already-in-use") {
-      alert("Este correo ya está registrado. Usa el botón Iniciar sesión.");
+
+      alert(
+        "Este correo ya está registrado. Usa el botón Iniciar sesión."
+      );
+
     } else {
-      alert("No se pudo crear la cuenta: " + error.message);
+
+      alert(
+        "No se pudo crear la cuenta: " + error.message
+      );
+
     }
+
   }
+
 };
 
 $("resetPasswordBtn").onclick = async () => {
+
   const email = $("email").value.trim();
 
   if (!email) {
@@ -1403,30 +2343,48 @@ $("resetPasswordBtn").onclick = async () => {
   }
 
   try {
+
     await sendPasswordResetEmail(auth, email);
-    alert("Te enviamos un correo para restablecer tu contraseña.");
+
+    alert(
+      "Te enviamos un correo para restablecer tu contraseña."
+    );
+
   } catch (error) {
-    alert("No se pudo enviar el correo de recuperación: " + error.message);
+
+    alert(
+      "No se pudo enviar el correo de recuperación: " +
+      error.message
+    );
+
   }
+
 };
 
 $("logoutBtn").onclick = () => signOut(auth);
+
 $("loadDaily").onclick = renderDaily;
 
+
+
 function showNoticeModal() {
+
   const noticeModal = $("noticeModal");
 
   if (noticeModal) {
     noticeModal.style.display = "flex";
   }
+
 }
 
 function hideNoticeModal() {
+
   const noticeModal = $("noticeModal");
 
   if (noticeModal) {
     noticeModal.style.display = "none";
   }
+
 }
 
 const closeNoticeBtn = $("closeNoticeBtn");
@@ -1435,7 +2393,10 @@ if (closeNoticeBtn) {
   closeNoticeBtn.onclick = hideNoticeModal;
 }
 
+
+
 onAuthStateChanged(auth, async (user) => {
+
   currentUser = user;
 
   const loginBox = $("loginBox");
@@ -1459,39 +2420,39 @@ onAuthStateChanged(auth, async (user) => {
   allPredictions8Cache = null;
 
   if (user) {
+
     currentPlayerName = await loadUserProfile(user);
+
     const name = getDisplayName(user);
 
-    if (welcomeUser) {
+    if (welcomeUser)
       welcomeUser.textContent = `Bienvenid@, ${name}`;
-    }
 
-    if (userInfo) {
+    if (userInfo)
       userInfo.textContent = `Sesión: ${name}`;
-    }
 
-    if (loginBox) {
+    if (loginBox)
       loginBox.classList.add("hidden");
-    }
 
     showNoticeModal();
+
   } else {
+
     currentPlayerName = "";
 
-    if (welcomeUser) {
+    if (welcomeUser)
       welcomeUser.textContent = "";
-    }
 
-    if (userInfo) {
+    if (userInfo)
       userInfo.textContent = "Sin sesión";
-    }
 
-    if (loginBox) {
+    if (loginBox)
       loginBox.classList.remove("hidden");
-    }
 
     hideNoticeModal();
+
   }
 
   await renderActiveTab();
+
 });
