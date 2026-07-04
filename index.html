@@ -34,22 +34,22 @@
 
       <h2>Aviso Importante</h2>
 
-      <h3>16avos de Final habilitados</h3>
+      <h3>Octavos de Final habilitados</h3>
 
       <p>
         Ya puedes ingresar tus pronósticos correspondientes a los
-        <strong>16avos de Final</strong> de la Quiniela Mundialista 2026.
+        <strong>Octavos de Final</strong> de la Quiniela Mundialista 2026.
       </p>
 
       <div class="notice-date">
-        <strong>Fecha límite para enviar pronósticos:</strong><br>
-        Domingo 28 de junio de 2026<br>
-        <strong>Antes de las 13:00 horas</strong>
+        <strong>Importante:</strong><br>
+        Los pronósticos de Octavos se enviarán de la misma forma que los 16avos:
+        llenando todos los partidos y presionando el botón de envío una sola vez.
       </div>
 
       <div class="notice-payment">
         <strong>Recordatorio de cuota de participación</strong><br>
-        Si aún tienes pendiente el pago de la cuota de participación, te agradecemos realizarlo a la mayor brevedad posible para mantener activa tu participación en la quiniela.
+        Si aún tienes pendiente el pago de la cuota de participación, te agradecemos realizarlo a la mayor brevedad posible.
       </div>
 
       <button id="closeNoticeBtn">ENTENDIDO</button>
@@ -70,6 +70,7 @@
     <button data-tab="reglas" class="active">Reglas</button>
     <button data-tab="quiniela">Mi quiniela</button>
     <button data-tab="dieciseisavos">16avos</button>
+    <button data-tab="octavos">Octavos</button>
     <button data-tab="resultados">Resultados</button>
     <button data-tab="diaria">Tabla diaria</button>
     <button data-tab="ranking">Puntaje Inicial</button>
@@ -93,14 +94,14 @@
       <div class="rules-text">
         <h3>REGLAS OFICIALES – QUINIELA MUNDIALISTA 2026</h3>
 
-        <p><strong>1.</strong> Cada participante deberá ingresar sus pronósticos antes de la hora límite correspondiente a cada fase. Una vez ingresados los posibles resultados y enviados en el sistema, ya no podrán ser modificados bajo ninguna circunstancia.</p>
+        <p><strong>1.</strong> Cada participante deberá ingresar sus pronósticos antes de la hora límite correspondiente a cada fase. Una vez enviados, ya no podrán ser modificados.</p>
         <p><strong>2.</strong> Los marcadores válidos serán únicamente los correspondientes a los 90 minutos reglamentarios del juego.</p>
         <p><strong>3.</strong> No se tomarán en cuenta tiempos extras, tiempo suplementario ni tanda de penales.</p>
         <p><strong>4.</strong> Si el participante no ingresa algún marcador o deja incompleto el pronóstico de un partido, este se considerará inválido y no tendrá punteo alguno.</p>
 
         <p><strong>5.</strong> Sistema de puntuación:</p>
 
-        <p><strong>A. 🏆 Marcador exacto: 5 puntos</strong><br>Si aciertas exactamente el marcador final del partido, obtienes automáticamente los 5 puntos completos. Importante: Si obtienes marcador exacto, NO se suman puntos adicionales por goles o ganador.</p>
+        <p><strong>A. 🏆 Marcador exacto: 5 puntos</strong><br>Si aciertas exactamente el marcador final del partido, obtienes automáticamente los 5 puntos completos. Si obtienes marcador exacto, no se suman puntos adicionales por goles o ganador.</p>
         <p><strong>B. ⚽ Goles del Equipo 1: 1 punto</strong><br>Si aciertas la cantidad exacta de goles anotados por el Equipo 1.</p>
         <p><strong>C. ⚽ Goles del Equipo 2: 1 punto</strong><br>Si aciertas la cantidad exacta de goles anotados por el Equipo 2.</p>
         <p><strong>D. 🏅 Ganador o empate: 1 punto</strong><br>Si aciertas correctamente el ganador del partido o si pronosticas empate y el resultado oficial también fue empate.</p>
@@ -155,6 +156,21 @@
       <div id="submit16Area" style="display:flex;justify-content:center;align-items:center;margin-top:40px;margin-bottom:60px;width:100%;">
         <button id="submit16Btn" style="width:100%;max-width:620px;min-height:78px;font-size:24px;font-weight:800;border-radius:18px;letter-spacing:.04em;">
           ENVIAR PRONÓSTICOS 16AVOS
+        </button>
+      </div>
+    </section>
+
+    <section id="octavos" class="tab">
+      <h2>Octavos de Final</h2>
+      <p class="note">
+        Llena tus pronósticos de Octavos de Final. Al enviar, quedarán bloqueados y se descargará una constancia independiente de esta fase.
+      </p>
+
+      <div id="matches8List" class="match-list"></div>
+
+      <div id="submit8Area" style="display:flex;justify-content:center;align-items:center;margin-top:40px;margin-bottom:60px;width:100%;">
+        <button id="submit8Btn" style="width:100%;max-width:620px;min-height:78px;font-size:24px;font-weight:800;border-radius:18px;letter-spacing:.04em;">
+          ENVIAR PRONÓSTICOS OCTAVOS
         </button>
       </div>
     </section>
