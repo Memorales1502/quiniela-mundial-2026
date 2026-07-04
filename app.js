@@ -282,19 +282,6 @@ async function loadUserPredictions16(force = false) {
   userPredictions16Loaded = true;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 async function loadUserPredictions8(force = false) {
 
   if (!currentUser) return;
@@ -712,17 +699,6 @@ async function savePrediction8(match) {
 
 }
 
-
-
-
-
-
-
-
-
-
-
-
 async function saveResult(match) {
   if (!ADMIN_EMAILS.includes(currentUser?.email)) {
     alert("No tienes permiso de administrador.");
@@ -930,20 +906,6 @@ function card(match, prediction, phase = "groups") {
   `;
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 async function renderQuiniela() {
 
@@ -1246,17 +1208,6 @@ async function renderResults() {
 
 }
 
-
-
-
-
-
-
-
-
-
-
-
 async function downloadPlayerPredictionsCSV(playerKey) {
 
   if (!ADMIN_EMAILS.includes(currentUser?.email)) {
@@ -1396,20 +1347,6 @@ async function downloadPlayerPredictionsCSV(playerKey) {
 
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 async function buildPlayerDownloadCards() {
 
   const predictionsGroups = await loadAllPredictions();
@@ -1502,11 +1439,6 @@ async function buildPlayerDownloadCards() {
 
 }
 
-
-
-
-
-
 async function renderAdmin() {
 
   if (!ADMIN_EMAILS.includes(currentUser?.email)) {
@@ -1563,8 +1495,6 @@ async function renderAdmin() {
     </article>
   `).join("");
 
-
-
   const results16AdminHtml = MATCHES16.map((match) => `
     <article class="match-card">
 
@@ -1604,8 +1534,6 @@ async function renderAdmin() {
 
     </article>
   `).join("");
-
-
 
   const results8AdminHtml = MATCHES8.map((match) => `
     <article class="match-card">
@@ -1663,22 +1591,15 @@ async function renderAdmin() {
     <div class="match-list">
       ${resultsAdminHtml}
     </div>
-
-
-
     <div class="rules-text" style="margin-top:24px;">
       <h3>Registrar resultados oficiales - 16avos</h3>
       <p class="note">
         Ingresa los resultados oficiales de los 90 minutos.
       </p>
     </div>
-
     <div class="match-list">
       ${results16AdminHtml}
     </div>
-
-
-
     <div class="rules-text" style="margin-top:24px;">
       <h3>Registrar resultados oficiales - Octavos</h3>
       <p class="note">
@@ -1737,22 +1658,6 @@ async function renderAdmin() {
   });
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 async function buildScores(dateFilter = null, officialOnly = false) {
 
   await ensureResultsLoaded();
