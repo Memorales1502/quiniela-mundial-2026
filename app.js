@@ -24,6 +24,7 @@ import {
 import { firebaseConfig, ADMIN_EMAILS } from "./firebase-config.js";
 import { MATCHES } from "./matches.js";
 import { MATCHES16 } from "./matches16.js";
+import { MATCHES8 } from "./matches8.js";
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -46,6 +47,14 @@ let userPredictions16Loaded = false;
 
 let allPredictionsCache = null;
 let allPredictions16Cache = null;
+
+let results8 = {};
+let results8Loaded = false;
+
+let userPredictions8 = {};
+let userPredictions8Loaded = false;
+
+let allPredictions8Cache = null;
 
 const $ = (id) => document.getElementById(id);
 
@@ -193,6 +202,22 @@ async function ensureResults16Loaded(force = false) {
   results16Loaded = true;
 }
 
+async function ensureResults8Loaded(force = false) {
+
+  if (results8Loaded && !force) return;
+
+  results8 = {};
+
+  const snap = await getDocs(collection(db, "results8"));
+
+  snap.forEach((d) => {
+    results8[d.id] = d.data();
+  });
+
+  results8Loaded = true;
+
+}
+
 async function loadUserPredictions(force = false) {
   if (!currentUser) return;
 
@@ -235,6 +260,33 @@ async function loadUserPredictions16(force = false) {
   });
 
   userPredictions16Loaded = true;
+}
+
+async function loadUserPredictions8(force = false) {
+
+  if (!currentUser) return;
+
+  if (userPredictions8Loaded && !force) return;
+
+  userPredictions8 = {};
+
+  const q = query(
+    collection(db, "predictions8"),
+    where("uid", "==", currentUser.uid)
+  );
+
+  const snap = await getDocs(q);
+
+  snap.forEach((d) => {
+
+    const data = d.data();
+
+    userPredictions8[data.matchId] = data;
+
+  });
+
+  userPredictions8Loaded = true;
+
 }
 
 async function loadAllPredictions(force = false) {
@@ -292,6 +344,25 @@ function downloadCSV(rows, filename) {
   document.body.removeChild(link);
 
   URL.revokeObjectURL(url);
+}
+
+async function loadAllPredictions8(force = false) {
+
+  if (allPredictions8Cache && !force)
+    return allPredictions8Cache;
+
+  const snap = await getDocs(collection(db, "predictions8"));
+
+  allPredictions8Cache = [];
+
+  snap.forEach((d) => {
+
+    allPredictions8Cache.push(d.data());
+
+  });
+
+  return allPredictions8Cache;
+
 }
 
 function downloadPredictionsCSV(items, submittedAt, phaseName = "Fase de grupos") {
@@ -1373,15 +1444,19 @@ onAuthStateChanged(auth, async (user) => {
 
   resultsLoaded = false;
   results16Loaded = false;
+  results8Loaded = false;
 
   userPredictionsLoaded = false;
   userPredictions16Loaded = false;
+  userPredictions8Loaded = false;
 
   userPredictions = {};
   userPredictions16 = {};
+  userPredictions8 = {};
 
   allPredictionsCache = null;
   allPredictions16Cache = null;
+  allPredictions8Cache = null;
 
   if (user) {
     currentPlayerName = await loadUserProfile(user);
