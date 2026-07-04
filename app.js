@@ -24,6 +24,7 @@ import {
 import { firebaseConfig, ADMIN_EMAILS } from "./firebase-config.js";
 import { MATCHES } from "./matches.js";
 import { MATCHES16 } from "./matches16.js";
+import { MATCHES8 } from "./matches8.js";
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -34,18 +35,23 @@ let currentPlayerName = "";
 
 let results = {};
 let results16 = {};
+let results8 = {};
 
 let resultsLoaded = false;
 let results16Loaded = false;
+let results8Loaded = false;
 
 let userPredictions = {};
 let userPredictions16 = {};
+let userPredictions8 = {};
 
 let userPredictionsLoaded = false;
 let userPredictions16Loaded = false;
+let userPredictions8Loaded = false;
 
 let allPredictionsCache = null;
 let allPredictions16Cache = null;
+let allPredictions8Cache = null;
 
 const $ = (id) => document.getElementById(id);
 
@@ -89,6 +95,11 @@ const hasResult = (matchId) => {
 const hasResult16 = (matchId) => {
   return results16[matchId]?.homeScore !== undefined &&
     results16[matchId]?.awayScore !== undefined;
+};
+
+const hasResult8 = (matchId) => {
+  return results8[matchId]?.homeScore !== undefined &&
+    results8[matchId]?.awayScore !== undefined;
 };
 
 const isInvalidPrediction = (prediction) => {
@@ -141,7 +152,15 @@ const scorePoints = (prediction, result) => {
 };
 
 const isLockedForInput = (match, prediction, phase = "groups") => {
-  const resultExists = phase === "16" ? hasResult16(match.id) : hasResult(match.id);
+  let resultExists = hasResult(match.id);
+
+  if (phase === "16") {
+    resultExists = hasResult16(match.id);
+  }
+
+  if (phase === "8") {
+    resultExists = hasResult8(match.id);
+  }
 
   return Boolean(prediction?.submitted) ||
     Boolean(prediction?.locked) ||
@@ -193,6 +212,20 @@ async function ensureResults16Loaded(force = false) {
   results16Loaded = true;
 }
 
+async function ensureResults8Loaded(force = false) {
+  if (results8Loaded && !force) return;
+
+  results8 = {};
+
+  const snap = await getDocs(collection(db, "results8"));
+
+  snap.forEach((d) => {
+    results8[d.id] = d.data();
+  });
+
+  results8Loaded = true;
+}
+
 async function loadUserPredictions(force = false) {
   if (!currentUser) return;
 
@@ -237,6 +270,28 @@ async function loadUserPredictions16(force = false) {
   userPredictions16Loaded = true;
 }
 
+async function loadUserPredictions8(force = false) {
+  if (!currentUser) return;
+
+  if (userPredictions8Loaded && !force) return;
+
+  userPredictions8 = {};
+
+  const q = query(
+    collection(db, "predictions8"),
+    where("uid", "==", currentUser.uid)
+  );
+
+  const snap = await getDocs(q);
+
+  snap.forEach((d) => {
+    const data = d.data();
+    userPredictions8[data.matchId] = data;
+  });
+
+  userPredictions8Loaded = true;
+}
+
 async function loadAllPredictions(force = false) {
   if (allPredictionsCache && !force) return allPredictionsCache;
 
@@ -263,6 +318,20 @@ async function loadAllPredictions16(force = false) {
   });
 
   return allPredictions16Cache;
+}
+
+async function loadAllPredictions8(force = false) {
+  if (allPredictions8Cache && !force) return allPredictions8Cache;
+
+  const snap = await getDocs(collection(db, "predictions8"));
+
+  allPredictions8Cache = [];
+
+  snap.forEach((d) => {
+    allPredictions8Cache.push(d.data());
+  });
+
+  return allPredictions8Cache;
 }
 
 function downloadCSV(rows, filename) {
@@ -541,6 +610,113 @@ async function saveAllPredictions16() {
   await renderActiveTab();
 }
 
+async function saveAllPredictions8() {
+  if (!currentUser) {
+    alert("Debes iniciar sesión.");
+    return;
+  }
+
+  await ensureResults8Loaded();
+  await loadUserPredictions8();
+
+  const alreadySubmitted = [];
+  const blockedByGame = [];
+  const toSave = [];
+
+  for (const match of MATCHES8) {
+    const existing = userPredictions8[match.id];
+
+    if (existing?.submitted) {
+      alreadySubmitted.push(match);
+      continue;
+    }
+
+    if (hasResult8(match.id) || isStarted(match)) {
+      blockedByGame.push(match);
+      continue;
+    }
+
+    const h = $(`p8h_${match.id}`)?.value ?? "";
+    const a = $(`p8a_${match.id}`)?.value ?? "";
+    const incomplete = h === "" || a === "";
+
+    toSave.push({
+      match,
+      homeScore: incomplete ? null : Number(h),
+      awayScore: incomplete ? null : Number(a),
+      rawHome: h,
+      rawAway: a,
+      invalid: incomplete
+    });
+  }
+
+  if (toSave.length === 0) {
+    alert("No hay pronósticos nuevos de 8vos para enviar.");
+    return;
+  }
+
+  const invalidCount = toSave.filter((item) => item.invalid).length;
+
+  let message = `Vas a enviar ${toSave.length} pronósticos de 8vos y quedarán bloqueados definitivamente.
+
+`;
+
+  if (invalidCount > 0) {
+    message += `Atención: ${invalidCount} pronóstico(s) están incompletos y se guardarán como INVÁLIDOS con 0 puntos.
+
+`;
+  }
+
+  if (blockedByGame.length > 0) {
+    message += `${blockedByGame.length} partido(s) ya están bloqueados por inicio o resultado oficial y no se enviarán.
+
+`;
+  }
+
+  if (alreadySubmitted.length > 0) {
+    message += `${alreadySubmitted.length} partido(s) ya habían sido enviados anteriormente y no se modificarán.
+
+`;
+  }
+
+  message += "¿Confirmas el envío?";
+
+  if (!confirm(message)) return;
+
+  const submittedAt = new Date();
+  const playerName = getDisplayName(currentUser);
+
+  for (const item of toSave) {
+    const data = {
+      uid: currentUser.uid,
+      email: currentUser.email,
+      playerName,
+      phase: "8vos",
+      matchId: item.match.id,
+      homeScore: item.homeScore,
+      awayScore: item.awayScore,
+      invalid: item.invalid,
+      submitted: true,
+      locked: true,
+      submittedAt: serverTimestamp()
+    };
+
+    await setDoc(
+      doc(db, "predictions8", `${currentUser.uid}_${item.match.id}`),
+      data
+    );
+
+    userPredictions8[item.match.id] = data;
+  }
+
+  allPredictions8Cache = null;
+
+  downloadPredictionsCSV(toSave, submittedAt, "8vos");
+
+  alert("Pronósticos de 8vos enviados correctamente. Se descargó tu constancia.");
+  await renderActiveTab();
+}
+
 async function saveResult(match) {
   if (!ADMIN_EMAILS.includes(currentUser?.email)) {
     alert("No tienes permiso de administrador.");
@@ -615,13 +791,51 @@ async function saveResult16(match) {
   await renderActiveTab();
 }
 
+async function saveResult8(match) {
+  if (!ADMIN_EMAILS.includes(currentUser?.email)) {
+    alert("No tienes permiso de administrador.");
+    return;
+  }
+
+  const h = $(`r8h_${match.id}`).value;
+  const a = $(`r8a_${match.id}`).value;
+
+  if (h === "" || a === "") {
+    alert("Coloca el resultado final de los 90 minutos.");
+    return;
+  }
+
+  if (!confirm(`Guardar resultado oficial de 8vos: ${match.home} ${h}-${a} ${match.away}?`)) return;
+
+  await setDoc(doc(db, "results8", match.id), {
+    matchId: match.id,
+    homeScore: Number(h),
+    awayScore: Number(a),
+    updatedAt: serverTimestamp(),
+    admin: currentUser.email
+  });
+
+  results8[match.id] = {
+    matchId: match.id,
+    homeScore: Number(h),
+    awayScore: Number(a),
+    admin: currentUser.email
+  };
+
+  results8Loaded = true;
+  allPredictions8Cache = null;
+
+  await renderActiveTab();
+}
+
 function card(match, prediction, phase = "groups") {
   const is16 = phase === "16";
-  const result = is16 ? results16[match.id] : results[match.id];
+  const is8 = phase === "8";
+  const result = is8 ? results8[match.id] : is16 ? results16[match.id] : results[match.id];
   const locked = isLockedForInput(match, prediction, phase);
 
-  const inputHomeId = is16 ? `p16h_${match.id}` : `ph_${match.id}`;
-  const inputAwayId = is16 ? `p16a_${match.id}` : `pa_${match.id}`;
+  const inputHomeId = is8 ? `p8h_${match.id}` : is16 ? `p16h_${match.id}` : `ph_${match.id}`;
+  const inputAwayId = is8 ? `p8a_${match.id}` : is16 ? `p16a_${match.id}` : `pa_${match.id}`;
 
   const predictionText = prediction?.submitted
     ? prediction.invalid
@@ -720,11 +934,41 @@ async function renderDieciseisavos() {
   }
 }
 
+async function renderOctavos() {
+  if (!currentUser) {
+    $("matches8List").innerHTML = '<p class="note">Ingresa o regístrate para llenar tus pronósticos de 8vos.</p>';
+
+    const submit8Btn = $("submit8Btn");
+    if (submit8Btn) submit8Btn.style.display = "none";
+
+    return;
+  }
+
+  $("matches8List").innerHTML = '<p class="note">Cargando partidos de 8vos...</p>';
+
+  await ensureResults8Loaded();
+  await loadUserPredictions8();
+
+  const html = MATCHES8.map((match) => {
+    return card(match, userPredictions8[match.id], "8");
+  });
+
+  $("matches8List").innerHTML = html.join("");
+
+  const submit8Btn = $("submit8Btn");
+
+  if (submit8Btn) {
+    submit8Btn.style.display = "inline-block";
+    submit8Btn.onclick = saveAllPredictions8;
+  }
+}
+
 async function renderResults() {
   $("resultsList").innerHTML = '<p class="note">Cargando resultados...</p>';
 
   await ensureResultsLoaded();
   await ensureResults16Loaded();
+  await ensureResults8Loaded();
 
   const groupResults = MATCHES.map((match) => {
     const result = results[match.id];
@@ -754,6 +998,20 @@ async function renderResults() {
     `;
   }).join("");
 
+  const round8Results = MATCHES8.map((match) => {
+    const result = results8[match.id];
+
+    return `
+      <article class="match-card">
+        <div>
+          <div class="teams">${match.home} vs ${match.away}</div>
+          <div class="meta">${match.date} ${match.time || ""} · 8vos</div>
+        </div>
+        <div>${result ? `Final 90': <b>${result.homeScore}-${result.awayScore}</b>` : "Pendiente"}</div>
+      </article>
+    `;
+  }).join("");
+
   $("resultsList").innerHTML = `
     <div class="rules-text">
       <h3>Fase de grupos</h3>
@@ -764,6 +1022,11 @@ async function renderResults() {
       <h3>16avos de Final</h3>
     </div>
     ${round16Results}
+
+    <div class="rules-text" style="margin-top:24px;">
+      <h3>8vos de Final</h3>
+    </div>
+    ${round8Results}
   `;
 }
 
@@ -775,9 +1038,11 @@ async function downloadPlayerPredictionsCSV(playerKey) {
 
   await ensureResultsLoaded();
   await ensureResults16Loaded();
+  await ensureResults8Loaded();
 
   const predictionsGroups = await loadAllPredictions();
   const predictions16 = await loadAllPredictions16();
+  const predictions8 = await loadAllPredictions8();
 
   const rows = [];
 
@@ -844,6 +1109,7 @@ async function downloadPlayerPredictionsCSV(playerKey) {
 
   addRows(predictionsGroups, MATCHES, "Fase de grupos", results);
   addRows(predictions16, MATCHES16, "16avos", results16);
+  addRows(predictions8, MATCHES8, "8vos", results8);
 
   if (rows.length <= 5) {
     alert("No se encontraron pronósticos para este jugador.");
@@ -865,6 +1131,7 @@ async function downloadPlayerPredictionsCSV(playerKey) {
 async function buildPlayerDownloadCards() {
   const predictionsGroups = await loadAllPredictions();
   const predictions16 = await loadAllPredictions16();
+  const predictions8 = await loadAllPredictions8();
 
   const players = {};
 
@@ -887,6 +1154,7 @@ async function buildPlayerDownloadCards() {
 
   addPlayers(predictionsGroups);
   addPlayers(predictions16);
+  addPlayers(predictions8);
 
   const list = Object.values(players).sort((a, b) =>
     a.name.localeCompare(b.name)
@@ -943,6 +1211,7 @@ async function renderAdmin() {
 
   await ensureResultsLoaded();
   await ensureResults16Loaded();
+  await ensureResults8Loaded();
 
   const playerDownloadsHtml = await buildPlayerDownloadCards();
 
@@ -978,6 +1247,22 @@ async function renderAdmin() {
     </article>
   `).join("");
 
+  const results8AdminHtml = MATCHES8.map((match) => `
+    <article class="match-card">
+      <div>
+        <div class="teams">${match.home} vs ${match.away}</div>
+        <div class="meta">${match.date} ${match.time || ""} · ${match.venue || ""}</div>
+      </div>
+
+      <div class="score-inputs">
+        <input id="r8h_${match.id}" type="number" min="0" value="${results8[match.id]?.homeScore ?? ""}">
+        -
+        <input id="r8a_${match.id}" type="number" min="0" value="${results8[match.id]?.awayScore ?? ""}">
+        <button data-result8="${match.id}">Guardar resultado 8vos</button>
+      </div>
+    </article>
+  `).join("");
+
   $("adminList").innerHTML = `
     ${playerDownloadsHtml}
 
@@ -1002,6 +1287,17 @@ async function renderAdmin() {
     <div class="match-list">
       ${results16AdminHtml}
     </div>
+
+    <div class="rules-text" style="margin-top:24px;">
+      <h3>Registrar resultados oficiales - 8vos</h3>
+      <p class="note">
+        Ingresa los resultados oficiales de 90 minutos de 8vos para que se sumen al ranking.
+      </p>
+    </div>
+
+    <div class="match-list">
+      ${results8AdminHtml}
+    </div>
   `;
 
   document.querySelectorAll("[data-download-player]").forEach((btn) => {
@@ -1017,14 +1313,20 @@ async function renderAdmin() {
   MATCHES16.forEach((match) => {
     document.querySelector(`[data-result16="${match.id}"]`)?.addEventListener("click", () => saveResult16(match));
   });
+
+  MATCHES8.forEach((match) => {
+    document.querySelector(`[data-result8="${match.id}"]`)?.addEventListener("click", () => saveResult8(match));
+  });
 }
 
 async function buildScores(dateFilter = null, officialOnly = false) {
   await ensureResultsLoaded();
   await ensureResults16Loaded();
+  await ensureResults8Loaded();
 
   const predictionsGroups = await loadAllPredictions();
   const predictions16 = await loadAllPredictions16();
+  const predictions8 = await loadAllPredictions8();
 
   const users = {};
   const excludedDate = "2026-06-12";
@@ -1048,7 +1350,8 @@ async function buildScores(dateFilter = null, officialOnly = false) {
       ganadores: 0,
       goles: 0,
       grupos: 0,
-      dieciseisavos: 0
+      dieciseisavos: 0,
+      octavos: 0
     };
 
     const score = scorePoints(prediction, result);
@@ -1061,6 +1364,10 @@ async function buildScores(dateFilter = null, officialOnly = false) {
 
     if (phaseName === "16avos") {
       users[playerKey].dieciseisavos += score.points;
+    }
+
+    if (phaseName === "8vos") {
+      users[playerKey].octavos += score.points;
     }
 
     if (score.exact) {
@@ -1082,6 +1389,11 @@ async function buildScores(dateFilter = null, officialOnly = false) {
   predictions16.forEach((prediction) => {
     const match = MATCHES16.find((item) => item.id === prediction.matchId);
     addScore(prediction, match, results16[prediction.matchId], "16avos");
+  });
+
+  predictions8.forEach((prediction) => {
+    const match = MATCHES8.find((item) => item.id === prediction.matchId);
+    addScore(prediction, match, results8[prediction.matchId], "8vos");
   });
 
   return Object.values(users).sort((a, b) =>
@@ -1107,6 +1419,7 @@ async function renderRanking() {
           <th>Total</th>
           <th>Grupos</th>
           <th>16avos</th>
+          <th>8vos</th>
           <th>Exactos</th>
           <th>Ganadores</th>
           <th>Goles</th>
@@ -1120,6 +1433,7 @@ async function renderRanking() {
             <td>${r.pts}</td>
             <td>${r.grupos}</td>
             <td>${r.dieciseisavos}</td>
+            <td>${r.octavos}</td>
             <td>${r.exactos}</td>
             <td>${r.ganadores}</td>
             <td>${r.goles}</td>
@@ -1156,6 +1470,7 @@ async function renderOfficialRanking() {
           <th>Puntos Oficiales</th>
           <th>Puntos Fase de Grupos</th>
           <th>16avos</th>
+          <th>8vos</th>
           <th>Exactos</th>
           <th>Ganadores</th>
           <th>Goles</th>
@@ -1169,6 +1484,7 @@ async function renderOfficialRanking() {
             <td>${r.pts}</td>
             <td>${r.grupos}</td>
             <td>${r.dieciseisavos}</td>
+            <td>${r.octavos}</td>
             <td>${r.exactos}</td>
             <td>${r.ganadores}</td>
             <td>${r.goles}</td>
@@ -1196,6 +1512,7 @@ async function renderDaily() {
           <th>Puntos del día</th>
           <th>Grupos</th>
           <th>16avos</th>
+          <th>8vos</th>
           <th>Exactos</th>
           <th>Ganadores</th>
           <th>Goles</th>
@@ -1209,6 +1526,7 @@ async function renderDaily() {
             <td>${r.pts}</td>
             <td>${r.grupos}</td>
             <td>${r.dieciseisavos}</td>
+            <td>${r.octavos}</td>
             <td>${r.exactos}</td>
             <td>${r.ganadores}</td>
             <td>${r.goles}</td>
@@ -1228,6 +1546,10 @@ async function renderActiveTab() {
 
   if (tabId === "dieciseisavos") {
     await renderDieciseisavos();
+  }
+
+  if (tabId === "octavos") {
+    await renderOctavos();
   }
 
   if (tabId === "resultados") {
@@ -1373,15 +1695,19 @@ onAuthStateChanged(auth, async (user) => {
 
   resultsLoaded = false;
   results16Loaded = false;
+  results8Loaded = false;
 
   userPredictionsLoaded = false;
   userPredictions16Loaded = false;
+  userPredictions8Loaded = false;
 
   userPredictions = {};
   userPredictions16 = {};
+  userPredictions8 = {};
 
   allPredictionsCache = null;
   allPredictions16Cache = null;
+  allPredictions8Cache = null;
 
   if (user) {
     currentPlayerName = await loadUserProfile(user);
