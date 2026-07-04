@@ -181,12 +181,16 @@ const isLockedForInput = (match, prediction, phase = "groups") => {
 async function loadUserProfile(user) {
   if (!user) return "";
 
-  const userRef = doc(db, "users", user.uid);
-  const snap = await getDoc(userRef);
+  try {
+    const userRef = doc(db, "users", user.uid);
+    const snap = await getDoc(userRef);
 
-  if (snap.exists()) {
-    const data = snap.data();
-    if (data.name) return data.name;
+    if (snap.exists()) {
+      const data = snap.data();
+      if (data.name) return data.name;
+    }
+  } catch (error) {
+    console.warn("No se pudo leer el perfil del usuario. Se usará el nombre de Auth.", error);
   }
 
   if (user.displayName) return user.displayName;
@@ -228,11 +232,15 @@ async function ensureResults8Loaded(force = false) {
 
   results8 = {};
 
-  const snap = await getDocs(collection(db, "results8"));
+  try {
+    const snap = await getDocs(collection(db, "results8"));
 
-  snap.forEach((d) => {
-    results8[d.id] = d.data();
-  });
+    snap.forEach((d) => {
+      results8[d.id] = d.data();
+    });
+  } catch (error) {
+    console.warn("No se pudieron cargar los resultados de Octavos. Revisa reglas/colección results8.", error);
+  }
 
   results8Loaded = true;
 
@@ -290,20 +298,24 @@ async function loadUserPredictions8(force = false) {
 
   userPredictions8 = {};
 
-  const q = query(
-    collection(db, "predictions8"),
-    where("uid", "==", currentUser.uid)
-  );
+  try {
+    const q = query(
+      collection(db, "predictions8"),
+      where("uid", "==", currentUser.uid)
+    );
 
-  const snap = await getDocs(q);
+    const snap = await getDocs(q);
 
-  snap.forEach((d) => {
+    snap.forEach((d) => {
 
-    const data = d.data();
+      const data = d.data();
 
-    userPredictions8[data.matchId] = data;
+      userPredictions8[data.matchId] = data;
 
-  });
+    });
+  } catch (error) {
+    console.warn("No se pudieron cargar pronósticos de Octavos. Revisa reglas/colección predictions8.", error);
+  }
 
   userPredictions8Loaded = true;
 
@@ -371,15 +383,19 @@ async function loadAllPredictions8(force = false) {
   if (allPredictions8Cache && !force)
     return allPredictions8Cache;
 
-  const snap = await getDocs(collection(db, "predictions8"));
-
   allPredictions8Cache = [];
 
-  snap.forEach((d) => {
+  try {
+    const snap = await getDocs(collection(db, "predictions8"));
 
-    allPredictions8Cache.push(d.data());
+    snap.forEach((d) => {
 
-  });
+      allPredictions8Cache.push(d.data());
+
+    });
+  } catch (error) {
+    console.warn("No se pudieron cargar todos los pronósticos de Octavos. Revisa reglas/colección predictions8.", error);
+  }
 
   return allPredictions8Cache;
 
