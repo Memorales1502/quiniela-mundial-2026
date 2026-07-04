@@ -3,7 +3,7 @@ export const MATCHES8 = [
   {
     id: "R8-001",
     date: "2026-07-04",
-    time: "13:00",
+    time: "11:00",
     group: "Octavos",
     home: "Canadá",
     away: "Marruecos",
@@ -13,7 +13,7 @@ export const MATCHES8 = [
   {
     id: "R8-002",
     date: "2026-07-04",
-    time: "17:00",
+    time: "15:00",
     group: "Octavos",
     home: "Paraguay",
     away: "Francia",
@@ -23,7 +23,7 @@ export const MATCHES8 = [
   {
     id: "R8-003",
     date: "2026-07-05",
-    time: "16:00",
+    time: "14:00",
     group: "Octavos",
     home: "Brasil",
     away: "Noruega",
@@ -33,7 +33,7 @@ export const MATCHES8 = [
   {
     id: "R8-004",
     date: "2026-07-05",
-    time: "20:00",
+    time: "18:00",
     group: "Octavos",
     home: "México",
     away: "Inglaterra",
@@ -43,7 +43,7 @@ export const MATCHES8 = [
   {
     id: "R8-005",
     date: "2026-07-06",
-    time: "15:00",
+    time: "13:00",
     group: "Octavos",
     home: "Portugal",
     away: "España",
@@ -53,7 +53,7 @@ export const MATCHES8 = [
   {
     id: "R8-006",
     date: "2026-07-06",
-    time: "20:00",
+    time: "18:00",
     group: "Octavos",
     home: "Estados Unidos",
     away: "Bélgica",
@@ -63,7 +63,7 @@ export const MATCHES8 = [
   {
     id: "R8-007",
     date: "2026-07-07",
-    time: "12:00",
+    time: "10:00",
     group: "Octavos",
     home: "Argentina",
     away: "Egipto",
@@ -73,7 +73,7 @@ export const MATCHES8 = [
   {
     id: "R8-008",
     date: "2026-07-07",
-    time: "16:00",
+    time: "14:00",
     group: "Octavos",
     home: "Suiza",
     away: "Colombia",
