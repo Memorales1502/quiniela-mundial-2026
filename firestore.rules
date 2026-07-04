@@ -15,10 +15,6 @@ service cloud.firestore {
         );
     }
 
-    match /users/{doc} {
-      allow read, write: if signedIn();
-    }
-
     match /players/{doc} {
       allow read, write: if signedIn();
     }
@@ -34,39 +30,7 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
-    match /predictions16/{doc} {
-      allow read: if true;
-
-      allow create: if signedIn()
-        && request.resource.data.uid == request.auth.uid
-        && request.resource.data.submitted == true
-        && request.resource.data.locked == true;
-
-      allow update, delete: if false;
-    }
-
-    match /predictions8/{doc} {
-      allow read: if true;
-
-      allow create: if signedIn()
-        && request.resource.data.uid == request.auth.uid
-        && request.resource.data.submitted == true
-        && request.resource.data.locked == true;
-
-      allow update, delete: if false;
-    }
-
     match /results/{doc} {
-      allow read: if true;
-      allow create, update, delete: if isAdmin();
-    }
-
-    match /results16/{doc} {
-      allow read: if true;
-      allow create, update, delete: if isAdmin();
-    }
-
-    match /results8/{doc} {
       allow read: if true;
       allow create, update, delete: if isAdmin();
     }
