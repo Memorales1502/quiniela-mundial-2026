@@ -19,6 +19,10 @@ service cloud.firestore {
       allow read, write: if signedIn();
     }
 
+    // ==========================
+    // FASE DE GRUPOS
+    // ==========================
+
     match /predictions/{doc} {
       allow read: if true;
 
@@ -30,10 +34,58 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    // ==========================
+    // 16AVOS
+    // ==========================
+
+    match /predictions16/{doc} {
+      allow read: if true;
+
+      allow create: if signedIn()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.submitted == true
+        && request.resource.data.locked == true;
+
+      allow update, delete: if false;
+    }
+
+    // ==========================
+    // OCTAVOS
+    // ==========================
+
+    match /predictions8/{doc} {
+      allow read: if true;
+
+      allow create: if signedIn()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.submitted == true
+        && request.resource.data.locked == true;
+
+      allow update, delete: if false;
+    }
+
+    // ==========================
+    // RESULTADOS
+    // ==========================
+
     match /results/{doc} {
       allow read: if true;
       allow create, update, delete: if isAdmin();
     }
+
+    match /results16/{doc} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /results8/{doc} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // ==========================
+    // OTROS
+    // ==========================
 
     match /matches/{doc} {
       allow read: if true;
