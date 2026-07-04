@@ -1,7 +1,7 @@
 export const MATCHES8 = [
 
   {
-    id: "R16-001",
+    id: "R8-001",
     date: "2026-07-04",
     time: "13:00",
     group: "Octavos",
@@ -11,7 +11,7 @@ export const MATCHES8 = [
   },
 
   {
-    id: "R16-002",
+    id: "R8-002",
     date: "2026-07-04",
     time: "17:00",
     group: "Octavos",
@@ -21,7 +21,7 @@ export const MATCHES8 = [
   },
 
   {
-    id: "R16-003",
+    id: "R8-003",
     date: "2026-07-05",
     time: "16:00",
     group: "Octavos",
@@ -31,7 +31,7 @@ export const MATCHES8 = [
   },
 
   {
-    id: "R16-004",
+    id: "R8-004",
     date: "2026-07-05",
     time: "20:00",
     group: "Octavos",
@@ -41,7 +41,7 @@ export const MATCHES8 = [
   },
 
   {
-    id: "R16-005",
+    id: "R8-005",
     date: "2026-07-06",
     time: "15:00",
     group: "Octavos",
@@ -51,7 +51,7 @@ export const MATCHES8 = [
   },
 
   {
-    id: "R16-006",
+    id: "R8-006",
     date: "2026-07-06",
     time: "20:00",
     group: "Octavos",
@@ -61,7 +61,7 @@ export const MATCHES8 = [
   },
 
   {
-    id: "R16-007",
+    id: "R8-007",
     date: "2026-07-07",
     time: "12:00",
     group: "Octavos",
@@ -71,7 +71,7 @@ export const MATCHES8 = [
   },
 
   {
-    id: "R16-008",
+    id: "R8-008",
     date: "2026-07-07",
     time: "16:00",
     group: "Octavos",
