@@ -2,11 +2,11 @@ export const MATCHES4 = [
 
   {
     id: "R4-001",
-    date: "2026-07-10",
-    time: "13:00",
+    date: "2026-07-09",
+    time: "14:00",
     group: "Cuartos",
-    home: "Ganador Octavos 1",
-    away: "Ganador Octavos 2",
+    home: "Francia",
+    away: "Marruecos",
     venue: "Gillette Stadium, Foxborough"
   },
 
@@ -23,10 +23,10 @@ export const MATCHES4 = [
   {
     id: "R4-003",
     date: "2026-07-11",
-    time: "13:00",
+    time: "15:00",
     group: "Cuartos",
-    home: "Ganador Octavos 5",
-    away: "Ganador Octavos 6",
+    home: "Noruega",
+    away: "Inglaterra",
     venue: "Hard Rock Stadium, Miami"
   },
 
