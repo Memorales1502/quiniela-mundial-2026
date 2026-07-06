@@ -89,6 +89,22 @@ service cloud.firestore {
     }
 
     // =====================================
+    // CUARTOS
+    // =====================================
+
+    match /predictions4/{doc} {
+
+      allow read: if true;
+
+      allow create: if signedIn()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.submitted == true
+        && request.resource.data.locked == true;
+
+      allow update, delete: if false;
+    }
+
+    // =====================================
     // RESULTADOS
     // =====================================
 
@@ -103,6 +119,11 @@ service cloud.firestore {
     }
 
     match /results8/{doc} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /results4/{doc} {
       allow read: if true;
       allow create, update, delete: if isAdmin();
     }
