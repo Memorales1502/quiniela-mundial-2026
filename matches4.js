@@ -36,7 +36,7 @@ export const MATCHES4 = [
     time: "19:00",
     group: "Cuartos",
     home: "Argentina",
-    away: "Ganador Octavos 8",
+    away: "Suiza",
     venue: "Arrowhead Stadium, Kansas City"
   }
 
