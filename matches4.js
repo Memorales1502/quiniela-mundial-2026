@@ -13,10 +13,10 @@ export const MATCHES4 = [
   {
     id: "R4-002",
     date: "2026-07-10",
-    time: "17:00",
+    time: "13:00",
     group: "Cuartos",
-    home: "Ganador Octavos 3",
-    away: "Ganador Octavos 4",
+    home: "España",
+    away: "Bélgica",
     venue: "SoFi Stadium, Los Ángeles"
   },
 
@@ -33,9 +33,9 @@ export const MATCHES4 = [
   {
     id: "R4-004",
     date: "2026-07-11",
-    time: "17:00",
+    time: "19:00",
     group: "Cuartos",
-    home: "Ganador Octavos 7",
+    home: "Argentina",
     away: "Ganador Octavos 8",
     venue: "Arrowhead Stadium, Kansas City"
   }
