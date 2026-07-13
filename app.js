@@ -120,8 +120,8 @@ const hasResult4 = (matchId) => {
 };
 
 const hasResult6 = (matchId) => {
-  return results4[matchId]?.homeScore !== undefined &&
-         results4[matchId]?.awayScore !== undefined;
+  return results6[matchId]?.homeScore !== undefined &&
+         results6[matchId]?.awayScore !== undefined;
 };
 
 const isInvalidPrediction = (prediction) => {
@@ -1042,7 +1042,7 @@ async function saveAllPredictions6() {
   const invalidCount = toSave.filter(x => x.invalid).length;
 
   let message =
-`Vas a enviar ${toSave.length} pronósticos de Semifinales quedarán bloqueados definitivamente.\n\n`;
+`Vas a enviar ${toSave.length} los pronósticos de Semifinales quedarán bloqueados definitivamente.\n\n`;
 
   if (invalidCount > 0) {
     message +=
@@ -1335,8 +1335,8 @@ function card(match, prediction, phase = "groups") {
   const is16 = phase === "16";
   const is8 = phase === "8";
   const is4 = phase === "4";
-  const is4 = phase === "6";
-  const result = is6 ? results6[match.id] : is6 ? results4[match.id] : is8 ? results8[match.id] : is16 ? results16[match.id] : results[match.id];
+  const is6 = phase === "6";
+  const result = is6 ? results6[match.id] : is4 ? results4[match.id] : is8 ? results8[match.id] : is16 ? results16[match.id] : results[match.id];
   const locked = isLockedForInput(match, prediction, phase);
 
   const inputHomeId = is6 ? `p6h_${match.id}` : is4 ? `p4h_${match.id}` : is8 ? `p8h_${match.id}` : is16 ? `p16h_${match.id}` : `ph_${match.id}`;
@@ -2074,7 +2074,8 @@ async function buildScores(dateFilter = null, officialOnly = false) {
     grupos: 0,
     dieciseisavos: 0,
     octavos: 0,
-    cuartos: 0
+    cuartos: 0,
+    semifinales: 0
     };
 
     const score = scorePoints(prediction, result);
@@ -2134,7 +2135,7 @@ async function buildScores(dateFilter = null, officialOnly = false) {
 
   predictions6.forEach((prediction) => {
     const match = MATCHES6.find((item) => item.id === prediction.matchId);
-    addScore(prediction, match, results4[prediction.matchId], "Semifinales");
+    addScore(prediction, match, results6[prediction.matchId], "Semifinales");
   });
 
   return Object.values(users).sort((a, b) =>
@@ -2310,7 +2311,7 @@ async function renderActiveTab() {
   }
 
   if (tabId === "semifinales") {
-  await renderCuartos();
+  await renderSemifinales();
   }
 
   if (tabId === "resultados") {
