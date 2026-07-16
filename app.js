@@ -2459,7 +2459,7 @@ async function buildScores(dateFilter = null, officialOnly = false) {
     }
 
     if (phaseName === "3er lugar y final") {
-    users[playerKey].tercerLugarFinal:l += score.points;
+    users[playerKey].tercerLugarFinal += score.points;
     }
 
     if (score.exact) {
