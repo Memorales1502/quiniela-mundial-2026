@@ -1930,7 +1930,7 @@ const round9Results = MATCHES9.map((match) => {
     <article class="match-card">
       <div>
         <div class="teams">${match.home} vs ${match.away}</div>
-        <div class="meta">${match.date} ${match.time || ""} · 3erlugaryfinal</div>
+        <div class="meta">${match.date} ${match.time || ""} · tercerLugarFinal</div>
       </div>
 
       <div>
@@ -2069,7 +2069,7 @@ async function downloadPlayerPredictionsCSV(playerKey) {
   addRows(predictions8, MATCHES8, "8vos", results8);
   addRows(predictions4, MATCHES4, "Cuartos", results4);
   addRows(predictions6, MATCHES6, "Semifinales", results6);
-  addRows(predictions9, MATCHES9, "3erlugaryfinal", results9);
+  addRows(predictions9, MATCHES9, "tercerLugarFinal", results9);
 
   if (rows.length <= 5) {
     alert("No se encontraron pronósticos para este jugador.");
@@ -2430,7 +2430,8 @@ async function buildScores(dateFilter = null, officialOnly = false) {
     dieciseisavos: 0,
     octavos: 0,
     cuartos: 0,
-    semifinales: 0
+    semifinales: 0,
+    tercerLugarFinal: 0
     };
 
     const score = scorePoints(prediction, result);
@@ -2458,7 +2459,7 @@ async function buildScores(dateFilter = null, officialOnly = false) {
     }
 
     if (phaseName === "3er lugar y final") {
-    users[playerKey].3erlugaryfinal += score.points;
+    users[playerKey].tercerLugarFinal:l += score.points;
     }
 
     if (score.exact) {
@@ -2545,7 +2546,7 @@ async function renderRanking() {
             <td>${r.octavos}</td>
             <td>${r.cuartos}</td>
             <td>${r.semifinales}</td>
-            <td>${r.3erlugaryfinal}</td>
+            <td>${r.tercerLugarFinal}</td>
             <td>${r.exactos}</td>
             <td>${r.ganadores}</td>
             <td>${r.goles}</td>
@@ -2602,7 +2603,7 @@ async function renderOfficialRanking() {
             <td>${r.octavos}</td>
             <td>${r.cuartos}</td>
             <td>${r.semifinales}</td>
-            <td>${r.3erlugaryfinal}</td>
+            <td>${r.tercerLugarFinal}</td>
             <td>${r.exactos}</td>
             <td>${r.ganadores}</td>
             <td>${r.goles}</td>
@@ -2650,7 +2651,7 @@ async function renderDaily() {
             <td>${r.octavos}</td>
             <td>${r.cuartos}</td>
             <td>${r.semifinales}</td>
-            <td>${r.3erlugaryfinal}</td>
+            <td>${r.tercerLugarFinal}</td>
             <td>${r.exactos}</td>
             <td>${r.ganadores}</td>
             <td>${r.goles}</td>
