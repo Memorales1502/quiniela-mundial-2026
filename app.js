@@ -1271,7 +1271,7 @@ async function saveAllPredictions9() {
       email: currentUser.email,
       playerName,
 
-      phase: "Semifinales",
+      phase: "3er Lugar y Final",
 
       matchId: item.match.id,
 
@@ -2684,7 +2684,7 @@ async function renderActiveTab() {
   await renderSemifinales();
   }
 
-  if (tabId === "3er lugar y final") {
+  if (tabId === "tercerLugarFinal") {
   await renderTercerlugaryfinal();
   }
 
