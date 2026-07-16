@@ -1,7 +1,7 @@
-export const MATCHES7 = [
+export const MATCHES9 = [
 
   {
-    id: "R7-001",
+    id: "R9-001",
     date: "2026-07-18",
     time: "15:00",
     group: "Tercer Lugar",
@@ -11,7 +11,7 @@ export const MATCHES7 = [
   },
 
   {
-    id: "R7-002",
+    id: "R9-002",
     date: "2026-07-19",
     time: "13:00",
     group: "Final",
