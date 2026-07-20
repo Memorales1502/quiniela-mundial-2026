@@ -122,17 +122,17 @@ const hasResult8 = (matchId) => {
 
 const hasResult4 = (matchId) => {
   return results4[matchId]?.homeScore !== undefined &&
-         results4[matchId]?.awayScore !== undefined;
+    results4[matchId]?.awayScore !== undefined;
 };
 
 const hasResult6 = (matchId) => {
   return results6[matchId]?.homeScore !== undefined &&
-         results6[matchId]?.awayScore !== undefined;
+    results6[matchId]?.awayScore !== undefined;
 };
 
 const hasResult9 = (matchId) => {
   return results9[matchId]?.homeScore !== undefined &&
-         results9[matchId]?.awayScore !== undefined;
+    results9[matchId]?.awayScore !== undefined;
 };
 
 const isInvalidPrediction = (prediction) => {
@@ -209,9 +209,9 @@ const isLockedForInput = (match, prediction, phase = "groups") => {
   }
 
   return Boolean(prediction?.submitted) ||
-         Boolean(prediction?.locked) ||
-         resultExists ||
-         isStarted(match);
+    Boolean(prediction?.locked) ||
+    resultExists ||
+    isStarted(match);
 
 };
 
@@ -965,8 +965,8 @@ async function saveAllPredictions4() {
     }
 
     if (hasResult4(match.id) || isStarted(match)) {
-    blockedByGame.push(match);
-    continue;
+      blockedByGame.push(match);
+      continue;
     }
 
     const h = $(`p4h_${match.id}`)?.value ?? "";
@@ -993,21 +993,21 @@ async function saveAllPredictions4() {
   const invalidCount = toSave.filter(x => x.invalid).length;
 
   let message =
-`Vas a enviar ${toSave.length} pronósticos de Cuartos y quedarán bloqueados definitivamente.\n\n`;
+    `Vas a enviar ${toSave.length} pronósticos de Cuartos y quedarán bloqueados definitivamente.\n\n`;
 
   if (invalidCount > 0) {
     message +=
-`Atención: ${invalidCount} pronóstico(s) incompletos serán guardados con 0 puntos.\n\n`;
+      `Atención: ${invalidCount} pronóstico(s) incompletos serán guardados con 0 puntos.\n\n`;
   }
 
   if (blockedByGame.length > 0) {
     message +=
-`${blockedByGame.length} partido(s) ya están bloqueados.\n\n`;
+      `${blockedByGame.length} partido(s) ya están bloqueados.\n\n`;
   }
 
   if (alreadySubmitted.length > 0) {
     message +=
-`${alreadySubmitted.length} partido(s) ya fueron enviados anteriormente.\n\n`;
+      `${alreadySubmitted.length} partido(s) ya fueron enviados anteriormente.\n\n`;
   }
 
   message += "¿Confirmas el envío?";
@@ -1088,8 +1088,8 @@ async function saveAllPredictions6() {
     }
 
     if (hasResult6(match.id) || isStarted(match)) {
-    blockedByGame.push(match);
-    continue;
+      blockedByGame.push(match);
+      continue;
     }
 
     const h = $(`p6h_${match.id}`)?.value ?? "";
@@ -1116,21 +1116,21 @@ async function saveAllPredictions6() {
   const invalidCount = toSave.filter(x => x.invalid).length;
 
   let message =
-`Vas a enviar ${toSave.length} los pronósticos de Semifinales quedarán bloqueados definitivamente.\n\n`;
+    `Vas a enviar ${toSave.length} los pronósticos de Semifinales quedarán bloqueados definitivamente.\n\n`;
 
   if (invalidCount > 0) {
     message +=
-`Atención: ${invalidCount} pronóstico(s) incompletos serán guardados con 0 puntos.\n\n`;
+      `Atención: ${invalidCount} pronóstico(s) incompletos serán guardados con 0 puntos.\n\n`;
   }
 
   if (blockedByGame.length > 0) {
     message +=
-`${blockedByGame.length} partido(s) ya están bloqueados.\n\n`;
+      `${blockedByGame.length} partido(s) ya están bloqueados.\n\n`;
   }
 
   if (alreadySubmitted.length > 0) {
     message +=
-`${alreadySubmitted.length} partido(s) ya fueron enviados anteriormente.\n\n`;
+      `${alreadySubmitted.length} partido(s) ya fueron enviados anteriormente.\n\n`;
   }
 
   message += "¿Confirmas el envío?";
@@ -1211,8 +1211,8 @@ async function saveAllPredictions9() {
     }
 
     if (hasResult9(match.id) || isStarted(match)) {
-    blockedByGame.push(match);
-    continue;
+      blockedByGame.push(match);
+      continue;
     }
 
     const h = $(`p9h_${match.id}`)?.value ?? "";
@@ -1239,21 +1239,21 @@ async function saveAllPredictions9() {
   const invalidCount = toSave.filter(x => x.invalid).length;
 
   let message =
-`Vas a enviar ${toSave.length} los pronósticos de 3er Lugar y Final quedarán bloqueados definitivamente.\n\n`;
+    `Vas a enviar ${toSave.length} los pronósticos de 3er Lugar y Final quedarán bloqueados definitivamente.\n\n`;
 
   if (invalidCount > 0) {
     message +=
-`Atención: ${invalidCount} pronóstico(s) incompletos serán guardados con 0 puntos.\n\n`;
+      `Atención: ${invalidCount} pronóstico(s) incompletos serán guardados con 0 puntos.\n\n`;
   }
 
   if (blockedByGame.length > 0) {
     message +=
-`${blockedByGame.length} partido(s) ya están bloqueados.\n\n`;
+      `${blockedByGame.length} partido(s) ya están bloqueados.\n\n`;
   }
 
   if (alreadySubmitted.length > 0) {
     message +=
-`${alreadySubmitted.length} partido(s) ya fueron enviados anteriormente.\n\n`;
+      `${alreadySubmitted.length} partido(s) ya fueron enviados anteriormente.\n\n`;
   }
 
   message += "¿Confirmas el envío?";
@@ -1437,36 +1437,36 @@ async function saveResult4(match) {
   }
 
   if (!confirm(
-`Guardar resultado oficial de Cuartos: ${match.home} ${h}-${a} ${match.away}?`
-)) return;
+    `Guardar resultado oficial de Cuartos: ${match.home} ${h}-${a} ${match.away}?`
+  )) return;
 
-  await setDoc(doc(db,"results4",match.id),{
+  await setDoc(doc(db, "results4", match.id), {
 
-    matchId:match.id,
+    matchId: match.id,
 
-    homeScore:Number(h),
-    awayScore:Number(a),
+    homeScore: Number(h),
+    awayScore: Number(a),
 
-    updatedAt:serverTimestamp(),
+    updatedAt: serverTimestamp(),
 
-    admin:currentUser.email
+    admin: currentUser.email
 
   });
 
-  results4[match.id]={
+  results4[match.id] = {
 
-    matchId:match.id,
+    matchId: match.id,
 
-    homeScore:Number(h),
-    awayScore:Number(a),
+    homeScore: Number(h),
+    awayScore: Number(a),
 
-    admin:currentUser.email
+    admin: currentUser.email
 
   };
 
-  results4Loaded=true;
+  results4Loaded = true;
 
-  allPredictions4Cache=null;
+  allPredictions4Cache = null;
 
   await renderActiveTab();
 
@@ -1488,36 +1488,36 @@ async function saveResult6(match) {
   }
 
   if (!confirm(
-`Guardar resultado oficial de Semifinales: ${match.home} ${h}-${a} ${match.away}?`
-)) return;
+    `Guardar resultado oficial de Semifinales: ${match.home} ${h}-${a} ${match.away}?`
+  )) return;
 
-  await setDoc(doc(db,"results6",match.id),{
+  await setDoc(doc(db, "results6", match.id), {
 
-    matchId:match.id,
+    matchId: match.id,
 
-    homeScore:Number(h),
-    awayScore:Number(a),
+    homeScore: Number(h),
+    awayScore: Number(a),
 
-    updatedAt:serverTimestamp(),
+    updatedAt: serverTimestamp(),
 
-    admin:currentUser.email
+    admin: currentUser.email
 
   });
 
-  results6[match.id]={
+  results6[match.id] = {
 
-    matchId:match.id,
+    matchId: match.id,
 
-    homeScore:Number(h),
-    awayScore:Number(a),
+    homeScore: Number(h),
+    awayScore: Number(a),
 
-    admin:currentUser.email
+    admin: currentUser.email
 
   };
 
-  results6Loaded=true;
+  results6Loaded = true;
 
-  allPredictions6Cache=null;
+  allPredictions6Cache = null;
 
   await renderActiveTab();
 
@@ -1539,36 +1539,36 @@ async function saveResult9(match) {
   }
 
   if (!confirm(
-`Guardar resultado oficial de 3er lugar y final: ${match.home} ${h}-${a} ${match.away}?`
-)) return;
+    `Guardar resultado oficial de 3er lugar y final: ${match.home} ${h}-${a} ${match.away}?`
+  )) return;
 
-  await setDoc(doc(db,"results9",match.id),{
+  await setDoc(doc(db, "results9", match.id), {
 
-    matchId:match.id,
+    matchId: match.id,
 
-    homeScore:Number(h),
-    awayScore:Number(a),
+    homeScore: Number(h),
+    awayScore: Number(a),
 
-    updatedAt:serverTimestamp(),
+    updatedAt: serverTimestamp(),
 
-    admin:currentUser.email
+    admin: currentUser.email
 
   });
 
-  results9[match.id]={
+  results9[match.id] = {
 
-    matchId:match.id,
+    matchId: match.id,
 
-    homeScore:Number(h),
-    awayScore:Number(a),
+    homeScore: Number(h),
+    awayScore: Number(a),
 
-    admin:currentUser.email
+    admin: currentUser.email
 
   };
 
-  results9Loaded=true;
+  results9Loaded = true;
 
-  allPredictions9Cache=null;
+  allPredictions9Cache = null;
 
   await renderActiveTab();
 
@@ -1580,7 +1580,7 @@ function card(match, prediction, phase = "groups") {
   const is4 = phase === "4";
   const is6 = phase === "6";
   const is9 = phase === "9";
-  const result = is9 ? results9[match.id] :is6 ? results6[match.id] : is4 ? results4[match.id] : is8 ? results8[match.id] : is16 ? results16[match.id] : results[match.id];
+  const result = is9 ? results9[match.id] : is6 ? results6[match.id] : is4 ? results4[match.id] : is8 ? results8[match.id] : is16 ? results16[match.id] : results[match.id];
   const locked = isLockedForInput(match, prediction, phase);
 
   const inputHomeId = is9 ? `p9h_${match.id}` : is6 ? `p6h_${match.id}` : is4 ? `p4h_${match.id}` : is8 ? `p8h_${match.id}` : is16 ? `p16h_${match.id}` : `ph_${match.id}`;
@@ -1884,9 +1884,9 @@ async function renderResults() {
   }).join("");
 
   const round4Results = MATCHES4.map((match) => {
-  const result = results4[match.id];
+    const result = results4[match.id];
 
-  return `
+    return `
     <article class="match-card">
       <div>
         <div class="teams">${match.home} vs ${match.away}</div>
@@ -1895,18 +1895,18 @@ async function renderResults() {
 
       <div>
         ${result
-          ? `Final 90': <b>${result.homeScore}-${result.awayScore}</b>`
-          : "Pendiente"}
+        ? `Final 90': <b>${result.homeScore}-${result.awayScore}</b>`
+        : "Pendiente"}
       </div>
     </article>
   `;
 
-}).join("");
+  }).join("");
 
   const round6Results = MATCHES6.map((match) => {
-  const result = results6[match.id];
+    const result = results6[match.id];
 
-  return `
+    return `
     <article class="match-card">
       <div>
         <div class="teams">${match.home} vs ${match.away}</div>
@@ -1915,18 +1915,18 @@ async function renderResults() {
 
       <div>
         ${result
-          ? `Final 90': <b>${result.homeScore}-${result.awayScore}</b>`
-          : "Pendiente"}
+        ? `Final 90': <b>${result.homeScore}-${result.awayScore}</b>`
+        : "Pendiente"}
       </div>
     </article>
   `;
 
-}).join("");
+  }).join("");
 
-const round9Results = MATCHES9.map((match) => {
-  const result = results9[match.id];
+  const round9Results = MATCHES9.map((match) => {
+    const result = results9[match.id];
 
-  return `
+    return `
     <article class="match-card">
       <div>
         <div class="teams">${match.home} vs ${match.away}</div>
@@ -1935,13 +1935,13 @@ const round9Results = MATCHES9.map((match) => {
 
       <div>
         ${result
-          ? `Final 90': <b>${result.homeScore}-${result.awayScore}</b>`
-          : "Pendiente"}
+        ? `Final 90': <b>${result.homeScore}-${result.awayScore}</b>`
+        : "Pendiente"}
       </div>
     </article>
   `;
 
-}).join("");
+  }).join("");
 
   $("resultsList").innerHTML = `
     <div class="rules-text">
@@ -2268,7 +2268,7 @@ async function renderAdmin() {
   </article>
 `).join("");
 
-const results9AdminHtml = MATCHES9.map((match) => `
+  const results9AdminHtml = MATCHES9.map((match) => `
   <article class="match-card">
     <div>
       <div class="teams">${match.home} vs ${match.away}</div>
@@ -2376,17 +2376,17 @@ const results9AdminHtml = MATCHES9.map((match) => `
   });
 
   MATCHES4.forEach((match) => {
-  document.querySelector(`[data-result4="${match.id}"]`)?.addEventListener("click", () => saveResult4(match));
-   });
+    document.querySelector(`[data-result4="${match.id}"]`)?.addEventListener("click", () => saveResult4(match));
+  });
 
   MATCHES6.forEach((match) => {
-  document.querySelector(`[data-result6="${match.id}"]`)?.addEventListener("click", () => saveResult6(match));
-   });
-  
+    document.querySelector(`[data-result6="${match.id}"]`)?.addEventListener("click", () => saveResult6(match));
+  });
+
   MATCHES9.forEach((match) => {
-  document.querySelector(`[data-result9="${match.id}"]`)?.addEventListener("click", () => saveResult9(match));
-   });
-  
+    document.querySelector(`[data-result9="${match.id}"]`)?.addEventListener("click", () => saveResult9(match));
+  });
+
 }
 
 async function buildScores(dateFilter = null, officialOnly = false) {
@@ -2420,18 +2420,18 @@ async function buildScores(dateFilter = null, officialOnly = false) {
 
     users[playerKey] ??= {
 
-    email: playerKey,
-    playerName: prediction.playerName || cleanNameFromEmail(playerKey),
-    pts: 0,
-    exactos: 0,
-    ganadores: 0,
-    goles: 0,
-    grupos: 0,
-    dieciseisavos: 0,
-    octavos: 0,
-    cuartos: 0,
-    semifinales: 0,
-    tercerLugarFinal: 0
+      email: playerKey,
+      playerName: prediction.playerName || cleanNameFromEmail(playerKey),
+      pts: 0,
+      exactos: 0,
+      ganadores: 0,
+      goles: 0,
+      grupos: 0,
+      dieciseisavos: 0,
+      octavos: 0,
+      cuartos: 0,
+      semifinales: 0,
+      tercerLugarFinal: 0
     };
 
     const score = scorePoints(prediction, result);
@@ -2451,15 +2451,15 @@ async function buildScores(dateFilter = null, officialOnly = false) {
     }
 
     if (phaseName === "Cuartos") {
-    users[playerKey].cuartos += score.points;
+      users[playerKey].cuartos += score.points;
     }
 
     if (phaseName === "Semifinales") {
-    users[playerKey].semifinales += score.points;
+      users[playerKey].semifinales += score.points;
     }
 
     if (phaseName === "3er lugar y final") {
-    users[playerKey].tercerLugarFinal += score.points;
+      users[playerKey].tercerLugarFinal += score.points;
     }
 
     if (score.exact) {
@@ -2662,6 +2662,138 @@ async function renderDaily() {
   `;
 }
 
+async function renderPodium() {
+
+    const ranking = await buildScores(null, true);
+
+    const container = document.getElementById("podiumContainer");
+
+    if (!ranking.length) {
+        container.innerHTML = "<p>No hay datos para mostrar.</p>";
+        return;
+    }
+
+    const primero = ranking[0] ?? {};
+    const segundo = ranking[1] ?? {};
+    const tercero = ranking[2] ?? {};
+
+    container.innerHTML = `
+
+        <div class="podium-test">
+
+            <!-- SEGUNDO LUGAR -->
+            <div class="podium-card silver">
+
+                <h2>🥈 Segundo Lugar</h2>
+
+                <h3>${segundo.playerName ?? "-"}</h3>
+
+                <p><strong>${segundo.pts ?? 0}</strong> puntos</p>
+
+                <hr>
+
+                <p>Exactos: ${segundo.exactos ?? 0}</p>
+
+                <p>Ganadores: ${segundo.ganadores ?? 0}</p>
+
+                <p>Goles: ${segundo.goles ?? 0}</p>
+
+                <hr>
+
+                <h4>📊 Desglose por fase</h4>
+
+                <p>Fase de grupos: ${segundo.grupos ?? 0}</p>
+
+                <p>16avos: ${segundo.dieciseisavos ?? 0}</p>
+
+                <p>Octavos: ${segundo.octavos ?? 0}</p>
+
+                <p>Cuartos: ${segundo.cuartos ?? 0}</p>
+
+                <p>Semifinales: ${segundo.semifinales ?? 0}</p>
+
+                <p>3er Lugar y Final: ${segundo.tercerLugarFinal ?? 0}</p>
+
+            </div>
+
+            <!-- PRIMER LUGAR -->
+            <div class="podium-card gold">
+
+                <h2>🥇 Primer Lugar</h2>
+
+                <h3>${primero.playerName ?? "-"}</h3>
+
+                <p><strong>${primero.pts ?? 0}</strong> puntos</p>
+
+                <hr>
+
+                <p>Exactos: ${primero.exactos ?? 0}</p>
+
+                <p>Ganadores: ${primero.ganadores ?? 0}</p>
+
+                <p>Goles: ${primero.goles ?? 0}</p>
+
+                <hr>
+
+                <h4>📊 Desglose por fase</h4>
+
+                <p>Fase de grupos: ${primero.grupos ?? 0}</p>
+
+                <p>16avos: ${primero.dieciseisavos ?? 0}</p>
+
+                <p>Octavos: ${primero.octavos ?? 0}</p>
+
+                <p>Cuartos: ${primero.cuartos ?? 0}</p>
+
+                <p>Semifinales: ${primero.semifinales ?? 0}</p>
+
+                <p>3er Lugar y Final: ${primero.tercerLugarFinal ?? 0}</p>
+
+
+            </div>
+
+            <!-- TERCER LUGAR -->
+            <div class="podium-card bronze">
+
+                <h2>🥉 Tercer Lugar</h2>
+
+                <h3>${tercero.playerName ?? "-"}</h3>
+
+                <p><strong>${tercero.pts ?? 0}</strong> puntos</p>
+
+                <hr>
+
+                <p>Exactos: ${tercero.exactos ?? 0}</p>
+
+                <p>Ganadores: ${tercero.ganadores ?? 0}</p>
+
+                <p>Goles: ${tercero.goles ?? 0}</p>
+
+                <hr>
+
+                <h4>📊 Desglose por fase</h4>
+
+                <p>Fase de grupos: ${tercero.grupos ?? 0}</p>
+
+                <p>16avos: ${tercero.dieciseisavos ?? 0}</p>
+
+                <p>Octavos: ${tercero.octavos ?? 0}</p>
+
+                <p>Cuartos: ${tercero.cuartos ?? 0}</p>
+
+                <p>Semifinales: ${tercero.semifinales ?? 0}</p>
+
+                <p>3er Lugar y Final: ${tercero.tercerLugarFinal ?? 0}</p>
+
+
+            </div>
+
+        </div>
+
+    `;
+
+}
+
 async function renderActiveTab() {
   const tabId = getCurrentTabId();
 
@@ -2678,15 +2810,15 @@ async function renderActiveTab() {
   }
 
   if (tabId === "cuartos") {
-  await renderCuartos();
+    await renderCuartos();
   }
 
   if (tabId === "semifinales") {
-  await renderSemifinales();
+    await renderSemifinales();
   }
 
   if (tabId === "tercerLugarFinal") {
-  await renderTercerlugaryfinal();
+    await renderTercerlugaryfinal();
   }
 
   if (tabId === "resultados") {
@@ -2707,6 +2839,10 @@ async function renderActiveTab() {
 
   if (tabId === "diaria") {
     await renderDaily();
+  }
+
+  if (tabId === "podio") {
+  await renderPodium();
   }
 }
 
