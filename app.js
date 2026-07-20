@@ -2677,12 +2677,46 @@ async function renderPodium() {
     const segundo = ranking[1] ?? {};
     const tercero = ranking[2] ?? {};
 
+    const noticePodium = document.getElementById("noticePodium");
+
+if (noticePodium) {
+
+    noticePodium.innerHTML = `
+
+        <div class="notice-podium">
+
+            <div class="notice-place second">
+                <div class="medal">🥈</div>
+                <div class="name">${segundo.playerName ?? "-"}</div>
+                <div class="points">${segundo.pts ?? 0} pts</div>
+            </div>
+
+            <div class="notice-place first">
+                <div class="medal">🥇</div>
+                <div class="name">${primero.playerName ?? "-"}</div>
+                <div class="points">${primero.pts ?? 0} pts</div>
+            </div>
+
+            <div class="notice-place third">
+                <div class="medal">🥉</div>
+                <div class="name">${tercero.playerName ?? "-"}</div>
+                <div class="points">${tercero.pts ?? 0} pts</div>
+            </div>
+
+        </div>
+
+    `;
+}
+
     container.innerHTML = `
 
         <div class="podium-test">
 
             <!-- SEGUNDO LUGAR -->
-            <div class="podium-card silver">
+            <div
+                class="podium-card silver"
+                data-email="${segundo.email ?? ""}"
+                onclick="showPlayerDetail('${segundo.email ?? ""}')">
 
                 <h2>🥈 Segundo Lugar</h2>
 
@@ -2717,7 +2751,10 @@ async function renderPodium() {
             </div>
 
             <!-- PRIMER LUGAR -->
-            <div class="podium-card gold">
+            <div
+                class="podium-card gold"
+                data-email="${primero.email ?? ""}"
+                onclick="showPlayerDetail('${primero.email ?? ""}')">
 
                 <h2>🥇 Primer Lugar</h2>
 
@@ -2749,11 +2786,13 @@ async function renderPodium() {
 
                 <p>3er Lugar y Final: ${primero.tercerLugarFinal ?? 0}</p>
 
-
             </div>
 
             <!-- TERCER LUGAR -->
-            <div class="podium-card bronze">
+            <div
+                class="podium-card bronze"
+                data-email="${tercero.email ?? ""}"
+                onclick="showPlayerDetail('${tercero.email ?? ""}')">
 
                 <h2>🥉 Tercer Lugar</h2>
 
@@ -2784,7 +2823,6 @@ async function renderPodium() {
                 <p>Semifinales: ${tercero.semifinales ?? 0}</p>
 
                 <p>3er Lugar y Final: ${tercero.tercerLugarFinal ?? 0}</p>
-
 
             </div>
 
@@ -3016,6 +3054,9 @@ onAuthStateChanged(auth, async (user) => {
     if (loginBox) {
       loginBox.classList.add("hidden");
     }
+
+    // Construye el podio
+    await renderPodium();
 
     showNoticeModal();
   } else {
