@@ -485,3 +485,146 @@ width:100%;
 }
 
 }
+
+/* =====================================================
+   PODIO DE CAMPEONES
+===================================================== */
+
+.podium-test{
+    display:flex;
+    justify-content:center;
+    align-items:flex-end;
+    gap:30px;
+    margin:50px auto;
+    flex-wrap:wrap;
+}
+
+/* Tarjeta base */
+
+.podium-card{
+    width:280px;
+    padding:25px;
+    border-radius:22px;
+    text-align:center;
+    box-shadow:0 12px 30px rgba(0,0,0,.30);
+    transition:all .35s ease;
+    border:3px solid transparent;
+}
+
+.podium-card:hover{
+    transform:translateY(-10px) scale(1.03);
+}
+
+/* ========================
+      PRIMER LUGAR
+======================== */
+
+.gold{
+
+    order:2;
+
+    margin-bottom:70px;
+
+    background:linear-gradient(180deg,#FFE082,#FFC107);
+
+    color:#2d2d2d;
+
+    border-color:#FFD700;
+
+    transform:scale(1.08);
+
+}
+
+/* ========================
+      SEGUNDO LUGAR
+======================== */
+
+.silver{
+
+    order:1;
+
+    background:linear-gradient(180deg,#ECEFF1,#B0BEC5);
+
+    color:#263238;
+
+    border-color:#B0BEC5;
+
+}
+
+/* ========================
+      TERCER LUGAR
+======================== */
+
+.bronze{
+
+    order:3;
+
+    margin-bottom:-30px;
+
+    background:linear-gradient(180deg,#D7A86E,#A97142);
+
+    color:white;
+
+    border-color:#8D5524;
+
+}
+
+/* Titulos */
+
+.podium-card h2{
+
+    margin-bottom:18px;
+
+}
+
+.podium-card h3{
+
+    font-size:28px;
+
+    margin-bottom:15px;
+
+}
+
+.podium-card p{
+
+    margin:8px 0;
+
+    font-size:18px;
+
+}
+
+.podium-card hr{
+
+    margin:18px auto;
+
+    width:80%;
+
+    opacity:.30;
+
+}
+
+/* Celulares */
+
+@media(max-width:900px){
+
+    .podium-test{
+
+        flex-direction:column;
+
+        align-items:center;
+
+    }
+
+    .gold,
+    .silver,
+    .bronze{
+
+        order:initial;
+
+        margin-bottom:20px;
+
+        transform:none;
+
+    }
+
+}
